@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.short-extrusion",
+	"name": "Short extrusion filter",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Drops extrusions too short to be worth the travel that reaches them",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer",
+	"required_apis": {
+		"slicing.extrusion_filter": "1.0.0"
+	}
+}
