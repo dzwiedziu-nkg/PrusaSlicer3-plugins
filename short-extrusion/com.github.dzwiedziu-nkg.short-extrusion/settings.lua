@@ -1,3 +1,6 @@
+-- Copyright (c) 2026 dzwiedziu-nkg
+-- SPDX-License-Identifier: AGPL-3.0-only
+
 -- Settings for the short extrusion filter plugin.
 -- Edit and re-slice; no restart and no rescan needed.
 

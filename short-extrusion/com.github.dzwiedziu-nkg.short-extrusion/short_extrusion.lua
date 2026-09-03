@@ -1,3 +1,6 @@
+-- Copyright (c) 2026 dzwiedziu-nkg
+-- SPDX-License-Identifier: AGPL-3.0-only
+
 -- Drops extrusions too short to be worth the travel that reaches them.
 --
 -- A fill pattern clipped against a contour leaves stubs behind: an infill line that

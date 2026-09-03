@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 dzwiedziu-nkg
+# SPDX-License-Identifier: AGPL-3.0-only
 """Group a G-code file into extrusion runs: maximal sequences of extruding moves
 not interrupted by a travel. Reports length distribution per ;TYPE: label."""
 import re, sys, math

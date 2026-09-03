@@ -121,3 +121,7 @@ the tables above were produced, and it is model independent.
   infill, with nothing to travel for, is dropped just like an isolated one. It costs
   nothing to keep such a path, so a future version could weigh the travel it actually
   saves.
+
+## License
+
+AGPL-3.0-only, the same licence as PrusaSlicer itself. The full text is in `LICENSE`.

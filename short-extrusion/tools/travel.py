@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 dzwiedziu-nkg
+# SPDX-License-Identifier: AGPL-3.0-only
 """Measure travel (non-extruding) moves in a G-code file. Independent of the
 slicer's own accounting: it only reads the emitted G0/G1 moves."""
 import re, sys, math
