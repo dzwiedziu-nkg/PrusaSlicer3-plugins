@@ -16,7 +16,7 @@ travel is a side issue; the length of the *longest individual* travel is what sh
 the print.
 
 The obvious fix — reversing the order on every layer — kills the jump and cuts total travel
-by 27 %, but it quietly breaks something else. The island at the turning point is the last
+by 28 %, but it quietly breaks something else. The island at the turning point is the last
 one printed on a layer and the first one on the next, so it gets no time at all to
 solidify. Measured on the test model, 47 % of all island revisits then happen sooner than
 the 10 s the filament profile asks for, against 3 % for stock.
