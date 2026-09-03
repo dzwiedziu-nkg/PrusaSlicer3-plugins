@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.island-order",
+	"name": "Island print order",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Reorders the disjoint islands of every layer to shorten travel moves",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer",
+	"required_apis": {
+		"slicing.island_order": "1.0.0"
+	}
+}
