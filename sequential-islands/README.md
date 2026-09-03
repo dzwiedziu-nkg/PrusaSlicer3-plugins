@@ -105,3 +105,7 @@ ln -s "$PWD/com.github.dzwiedziu-nkg.sequential-islands" ~/.config/PrusaSlicer/l
 The bundle directory name must match the manifest `id`. The plugin is automatic and has
 no menu item. The log confirms `Island sequencing plugin in use` and whether a plan was
 accepted.
+
+## License
+
+AGPL-3.0-only, the same licence as PrusaSlicer itself. The full text is in `LICENSE`.

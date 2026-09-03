@@ -1,3 +1,6 @@
+-- Copyright (c) 2026 dzwiedziu-nkg
+-- SPDX-License-Identifier: AGPL-3.0-only
+
 -- Edit and re-slice. The slicing plugin is loaded into a fresh Lua state per export.
 
 return {

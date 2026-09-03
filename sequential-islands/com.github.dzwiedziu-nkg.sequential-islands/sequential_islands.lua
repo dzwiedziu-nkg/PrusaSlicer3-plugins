@@ -1,3 +1,6 @@
+-- Copyright (c) 2026 dzwiedziu-nkg
+-- SPDX-License-Identifier: AGPL-3.0-only
+
 -- Sequentially prints independent branches which split from a common object.
 --
 -- The slicer supplies its exact inter-layer overlap graph. This plugin labels every
