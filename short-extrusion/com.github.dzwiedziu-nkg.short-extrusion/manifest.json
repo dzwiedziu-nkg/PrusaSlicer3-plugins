@@ -6,7 +6,7 @@
 	"version": "0.1.0",
 	"author": "dzwiedziu-nkg",
 	"description": "Drops extrusions too short to be worth the travel that reaches them",
-	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer",
+	"repo": "https://github.com/dzwiedziu-nkg/short-extrusion-plugin",
 	"required_apis": {
 		"slicing.extrusion_filter": "1.0.0"
 	}
