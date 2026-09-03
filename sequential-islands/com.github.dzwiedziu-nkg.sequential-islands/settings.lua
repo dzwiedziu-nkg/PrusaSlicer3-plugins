@@ -11,6 +11,7 @@ return {
     min_branch_layers = 3,
 
     -- Retraction wipe performed on the final extrusion path before changing branch.
+    -- After the descent, the slicer additionally prints infill before perimeters.
     wipe_distance = 2.0,
 
     -- The nozzle rises by this amount before the high XY move over the next branch.

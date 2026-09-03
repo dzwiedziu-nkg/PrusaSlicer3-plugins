@@ -25,6 +25,11 @@ Before Z moves down to the next branch, the slicer:
 3. moves XY at that high Z until it is above the first extrusion of the next branch;
 4. only then descends to the branch's first layer.
 
+Immediately after a downward move, that island exceptionally prints infill before its
+perimeters. The hidden infill becomes a long, model-contained purge/wipe and the visible
+walls are laid down only after the nozzle flow has stabilised. If a particular layer has
+no infill, the slicer simply starts with the first available perimeter.
+
 The G-code contains `ISLAND_SEQUENCE_TRANSITION_BEGIN/END` comments around this move.
 
 ## Safety envelope
@@ -38,10 +43,17 @@ Version 0.1 deliberately activates only for:
 - no spiral-vase or ordinary complete-objects mode;
 - no height-based custom G-code, color changes, or pauses.
 
-The existing complete-objects collision checker does **not** model branches starting
-above the bed. PrusaSlicer therefore shows a high-severity warning whenever this plugin's
-plan is accepted. Inspect the G-code preview and take responsibility for carriage and
-tool clearance around the completed branch.
+For Original Prusa CORE One (`printer_model = COREONE`), the plugin and the engine both
+use PrusaSlicer's fallback sequential-print geometry: a 10 x 10 mm nozzle footprint, a
+square with the profile's 75 mm clearance radius from 1 mm above the nozzle, and the X
+gantry from the profile's 33 mm clearance height. The preferred full branch order is
+checked first, then the reversed full order. If both collide, the upper branches are split
+into the tallest collision-free horizontal parties and each party tries both orders.
+
+The engine independently validates the final schedule and rejects it if it collides. The
+ordinary high-severity unchecked-collision warning is therefore suppressed for CORE One.
+Other printer models, including COREONE INDX and XL for now, retain the warning and remain
+the user's responsibility.
 
 If no persistent split is found, the overlap graph is ambiguous, or the returned plan
 fails the engine's dependency/coverage validation, slicing falls back to normal layer
@@ -62,6 +74,14 @@ smaller-Y (front) peak, and only then descends to Z = 17.6 mm.
 A control export and the sequential export contain identical positive model-extrusion
 totals in every G-code role. The sequential export does contain more INDX tool changes,
 as described above.
+
+## Validation on `niaczek_garaz.3mf`
+
+The two narrow door islands separate at Z = 4.2 mm and end at Z = 9.0 mm. Completing one
+whole island would collide with the CORE One head, so version 0.2 divides the sequence into
+five collision-free parties, each no taller than 0.8 mm. Every party transition raises Z,
+moves above the other island, descends, prints internal/solid infill first, and only then
+prints its perimeters.
 
 ## Settings
 
