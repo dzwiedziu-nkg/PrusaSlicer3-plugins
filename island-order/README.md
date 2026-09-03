@@ -109,3 +109,7 @@ model**; adapt `PILLAR_*` for anything else.
   from one layer to the next the tour is recomputed, and one revisit may fall short.
 - One object instance is ordered per call; the order between instances is decided
   elsewhere in the slicer.
+
+## License
+
+AGPL-3.0-only, the same licence as PrusaSlicer itself. The full text is in `LICENSE`.

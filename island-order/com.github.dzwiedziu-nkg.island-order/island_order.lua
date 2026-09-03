@@ -1,3 +1,6 @@
+-- Copyright (c) 2026 dzwiedziu-nkg
+-- SPDX-License-Identifier: AGPL-3.0-only
+
 -- Print order of the disjoint islands of a layer.
 --
 -- The problem this solves is not "too much travel" but "one travel long enough to

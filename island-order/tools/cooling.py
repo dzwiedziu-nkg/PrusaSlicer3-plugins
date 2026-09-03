@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 dzwiedziu-nkg
+# SPDX-License-Identifier: AGPL-3.0-only
 """Per-island cooling time and travel-hop metrics, read straight from the G-code.
 
 The test model is a row of 15 pillars 20 mm apart, so an extrusion can be
