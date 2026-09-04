@@ -15,6 +15,12 @@ the ring.
 On the test model, a 20 mm boss inside a 32 mm bore, the widest gap to cross is 6 mm but
 the longest bridge line is **27.7 mm**.
 
+![Stock bridge over an annular gap](doc/normal_bridge.png)
+
+Every line runs the same way regardless of where the anchors are. The ones passing closest
+to the hub are the longest in the layer, and they are unsupported over most of their
+length; the ones out at the sides are short only by accident of the geometry.
+
 ## What this does
 
 Spokes. Every line runs outwards from the inner island to the outer wall, so no line is
@@ -30,6 +36,13 @@ Two things make it practical rather than merely geometric:
 - **The spokes are walked as one continuous path**, out along one and back along the next.
   Emitted as separate lines they cost 2.6 m of extra travel on one layer; joined up they
   cost none.
+
+![Radial bridge over the same gap](doc/radial_bridge.png)
+
+The hairpin turns at both edges are the continuous path: the head runs out along one spoke,
+turns on the anchor, and comes back along the next. The spokes are visibly tighter at the
+inner edge than the outer one, which is the fan spreading as it goes; the count is chosen so
+that the average lands on the line spacing.
 
 The plugin claims only a surface it can improve: a bridge whose region has a hole in it.
 Everything else is declined and the slicer fills it exactly as before.
