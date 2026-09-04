@@ -32,6 +32,14 @@ no infill, the slicer simply starts with the first available perimeter.
 
 The G-code contains `ISLAND_SEQUENCE_TRANSITION_BEGIN/END` comments around this move.
 
+![One branch finished to the top before the other is started](doc/sequential_parts.png)
+
+Both screenshots are with the plugin on. Here there is room for the head to finish a whole
+branch: the far tower is complete to its top while the near one has barely started, which is
+the plugin printing the branch farthest from the tool dock first. The warning is the one
+described under *Safety envelope* — this printer is not one whose head geometry the engine
+checks, so clearing the finished tower is the user's call.
+
 ## Safety envelope
 
 Version 0.1 deliberately activates only for:
@@ -54,6 +62,14 @@ The engine independently validates the final schedule and rejects it if it colli
 ordinary high-severity unchecked-collision warning is therefore suppressed for CORE One.
 Other printer models, including COREONE INDX and XL for now, retain the warning and remain
 the user's responsibility.
+
+![Two branches taken in horizontal parties, neither finished to the top](doc/parts_of_sequnces.png)
+
+The same plugin on a part where finishing either branch whole would put the head through the
+other one. Neither tower is complete: they are climbing in collision-free parties, a few
+tenths of a millimetre at a time, alternating. It is less of a win than the case above — the
+head still crosses between the branches — but every crossing that is avoided is one that
+cannot ooze, and the schedule is checked rather than assumed.
 
 If no persistent split is found, the overlap graph is ambiguous, or the returned plan
 fails the engine's dependency/coverage validation, slicing falls back to normal layer
@@ -96,7 +112,16 @@ Edit `settings.lua` and slice again:
 
 ## Requirements and installation
 
-Use the accompanying PrusaSlicer fork with `slicing.island_sequence` API 1.0.0.
+**This plugin does not work with an official PrusaSlicer release.** The
+`slicing.island_sequence` API does not exist in PrusaSlicer 3.x as shipped; it is added by a
+fork:
+
+- fork, branch `feature/island-ordering-plugin-api`: https://github.com/dzwiedziu-nkg/PrusaSlicer/tree/feature/island-ordering-plugin-api
+- how to build and run it: https://github.com/dzwiedziu-nkg/PrusaSlicer/blob/feature/island-ordering-plugin-api/doc/Build_plugin_fork.md
+- the API contract: `doc/Plugin_API.md` in those sources
+
+Prusa have said they intend to expose the slicing pipeline to plugins themselves. When they
+do, this plugin should be rewritten against their interface and the fork dropped.
 
 ```bash
 ln -s "$PWD/com.github.dzwiedziu-nkg.sequential-islands" ~/.config/PrusaSlicer/lua/
