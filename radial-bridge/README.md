@@ -86,8 +86,8 @@ come out identical to a slice with the plugin removed.
 **This plugin does not work with an official PrusaSlicer release.** The `slicing.fill_planner` API does
 not exist in PrusaSlicer 3.x as shipped; it is added by a fork:
 
-- fork, branch `feature/island-ordering-plugin-api`: https://github.com/dzwiedziu-nkg/PrusaSlicer/tree/feature/island-ordering-plugin-api
-- how to build and run it: https://github.com/dzwiedziu-nkg/PrusaSlicer/blob/feature/island-ordering-plugin-api/doc/Build_plugin_fork.md
+- the fork, branch `main`, which carries all four hooks: https://github.com/dzwiedziu-nkg/PrusaSlicer
+- how to build and run it: https://github.com/dzwiedziu-nkg/PrusaSlicer/blob/main/doc/Build_plugin_fork.md
 - the API contract: `doc/Plugin_API.md` in those sources
 
 Prusa have said they intend to expose the slicing pipeline to plugins themselves. When they
