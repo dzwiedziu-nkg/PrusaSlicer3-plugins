@@ -16,6 +16,13 @@ corners, that repeats on every single layer.
 On the test model, 1704 of 1769 internal infill runs were shorter than 2 mm. Together they
 laid down 2.2 m of material and caused 76 m of head movement.
 
+![Two corners of a garage, each holding a short internal infill run](doc/small_extrusion.png)
+
+The two dark stubs in the corners are what internal infill amounts to on a part like this
+one — the legend puts the whole of it at 2.7 % of the print time for 0.28 m of filament.
+They are there because the grid meets the wall at a shallow angle, and they come back on
+every layer of the wall.
+
 ## What this does
 
 The slicer asks the plugin about every perimeter and infill path *before* travels and
@@ -23,6 +30,12 @@ seams are decided, so a rejected path disappears together with the movement that
 have reached it — and the paths that remain get routed as if it had never existed. That
 second part matters: most of the saving comes not from skipping the detour but from the
 infill traversal being re-optimised once the stubs are gone.
+
+![The same two corners with the stubs dropped](doc/removed_small_extrusions.png)
+
+Same corners, same walls, no stubs. The slicer's own estimate for that model drops from
+1 h 26 m to 1 h 22 m 30 s — a different garage from the one measured below, and a smaller
+saving than the table shows, which is what a shorter and simpler part looks like.
 
 Roles are handled by an **allowlist**. Only `Perimeter` (internal perimeters),
 `InternalInfill` and `SolidInfill` are ever considered; everything else is kept by
