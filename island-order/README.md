@@ -15,6 +15,8 @@ a normal retraction covers, so the nozzle oozes on the way and strings on arriva
 travel is a side issue; the length of the *longest individual* travel is what shows up on
 the print.
 
+![Stock island order: along the row, then one long jump back](doc/island_order_stock.png)
+
 The obvious fix — reversing the order on every layer — kills the jump and cuts total travel
 by 28 %, but it quietly breaks something else. The island at the turning point is the last
 one printed on a layer and the first one on the next, so it gets no time at all to
@@ -32,6 +34,12 @@ islands `1..n` that prints `1,3,5,...,n` then `n-1,...,4,2`. Three things follow
 - every travel spans at most two island gaps instead of the whole print;
 - the sequence ends next to where the next layer starts, so each island is revisited
   exactly one layer time after it was left.
+
+![Plugin island order: out along the odd islands, back along the even ones](doc/island_order_plugin.png)
+
+The return sweep is what buys the cooling: island 2 is printed near the end of the layer and
+island 1 near the start of the next, which are neighbours, so the head never has to cross the
+whole print to get from one layer to the next.
 
 ## Measurements
 
@@ -91,6 +99,10 @@ To turn it off, remove the bundle from the plugin directory, or set `mode = "sto
 ## Measuring
 
 `tools/travel.py` sums the non-extruding moves in a G-code file and is model independent.
+
+`tools/figures.py <screenshot> <output dir>` redraws the two diagrams above over a
+screenshot of the test model. The pillar positions are measured off that screenshot and are
+listed at the top of the script; re-measure them if it is retaken.
 
 `tools/cooling.py` reports, per island, the time between finishing it on one layer and
 starting it again on the next, plus the distribution of individual travel hops. It
