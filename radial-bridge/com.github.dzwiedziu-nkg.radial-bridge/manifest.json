@@ -3,11 +3,11 @@
 	"name": "Radial bridges",
 	"license": "AGPL-3.0-only",
 	"min_slicer_version": "3.0.0",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"author": "dzwiedziu-nkg",
 	"description": "Runs bridges over annular gaps as spokes instead of parallel lines",
 	"repo": "https://github.com/dzwiedziu-nkg/radial-bridge-plugin",
 	"required_apis": {
-		"slicing.fill_planner": "1.0.0"
+		"slicing.fill_planner": "1.1.0"
 	}
 }

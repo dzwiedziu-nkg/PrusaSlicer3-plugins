@@ -11,6 +11,11 @@
 -- The plugin only claims a surface it can actually improve: a bridge whose region has a
 -- hole in it, with the ray centre inside that hole. Everything else is declined and the
 -- slicer fills it as usual.
+--
+-- Two settings control how much plastic ends up on the bridge. `density` sets how many
+-- spokes are laid, and `flow_ratio` how much each of them carries. They are separate on
+-- purpose: fewer spokes leaves wider gaps, a thinner spoke stays where it is and only
+-- gets smaller, and a strand that curls up wants the second one rather than the first.
 
 info = {
     id = "radial_bridge",
@@ -25,6 +30,8 @@ local filtered_roles = settings.filtered_roles or {BridgeInfill = true}
 local min_hole_radius = settings.min_hole_radius or 1.0
 local max_spokes = settings.max_spokes or 2000
 local density = settings.density or 1.0
+local flow_ratio = settings.flow_ratio or 1.0
+local match_stock_material = settings.match_stock_material == true
 
 --- Area and centroid of a closed contour, by the shoelace formula.
 -- @return area (signed), cx, cy
@@ -42,6 +49,25 @@ local function centroid(points)
         return 0.0, 0.0, 0.0
     end
     return a / 2.0, cx / (3.0 * a), cy / (3.0 * a)
+end
+
+--- Total length of a polyline, in mm.
+local function polyline_length(path)
+    local total = 0.0
+    for i = 2, #path do
+        local dx, dy = path[i].x - path[i - 1].x, path[i].y - path[i - 1].y
+        total = total + math.sqrt(dx * dx + dy * dy)
+    end
+    return total
+end
+
+--- Area of the surface handed to the planner: its contour less its holes, in mm^2.
+local function surface_area(surface)
+    local area = math.abs((centroid(surface.contour)))
+    for _, hole in ipairs(surface.holes) do
+        area = area - math.abs((centroid(hole)))
+    end
+    return area
 end
 
 --- Distances from (cx, cy) to every crossing of a ray with a closed contour.
@@ -110,13 +136,16 @@ function plan_fill(surface)
     -- at the inner edge leaves the outer edge sparse and matching it at the outer edge
     -- crowds the inner one. Matching it half way puts the average where it belongs: the
     -- gap runs from spacing*r_in/r_mid to spacing*r_out/r_mid, and the material laid
-    -- down comes out the same as the pattern it replaces.
+    -- down comes out close to the pattern it replaces.
+    --
+    -- `density` scales that count directly, so 1.2 lays a fifth more spokes a fifth
+    -- closer together and 0.8 a fifth fewer.
     local spacing = surface.spacing
     if spacing == nil or spacing <= 0.0 then
         return nil
     end
     local r_mid = 0.5 * (r_hole + r_outer)
-    local spokes = math.floor(2.0 * math.pi * r_mid / (spacing * density) + 0.5)
+    local spokes = math.floor(2.0 * math.pi * r_mid * density / spacing + 0.5)
     if spokes < 3 or spokes > max_spokes then
         return nil
     end
@@ -189,5 +218,27 @@ function plan_fill(surface)
     if #paths == 0 then
         return nil
     end
-    return paths
+
+    local ratio = flow_ratio
+    if match_stock_material then
+        -- The pattern being replaced covers this same region with parallel lines
+        -- `spacing` apart, so it lays down area/spacing of line. Scaling the flow by the
+        -- ratio of the two lengths puts the same volume of plastic on the surface as the
+        -- slicer intended, whatever the fan happens to come out at.
+        --
+        -- area/spacing is an estimate of that pattern, not a measurement of it: it
+        -- ignores the anchors and the ends the filler clips. On the test model it comes
+        -- out at 0.9525 where the measured ratio of the two patterns is 0.9416, which
+        -- leaves the surface about 1 % over the stock material instead of 6 %.
+        local laid = 0.0
+        for _, path in ipairs(paths) do
+            laid = laid + polyline_length(path)
+        end
+        local wanted = surface_area(surface) / spacing
+        if laid > 1e-9 and wanted > 0.0 then
+            ratio = ratio * wanted / laid
+        end
+    end
+
+    return {paths = paths, flow_ratio = ratio}
 end
