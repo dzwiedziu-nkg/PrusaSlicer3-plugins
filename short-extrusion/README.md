@@ -72,7 +72,40 @@ allowlist doing its job.
 
 ## Settings
 
-`settings.lua` sits next to the plugin. Edit it and re-slice — no restart, no rescan.
+**There is no user interface for this — the file is the interface.** PrusaSlicer's
+_Plugins_ menu, and the parameter dialog behind it, only ever list plugins of type
+`project.plugin`, the ones you invoke yourself. A slicing plugin is not invoked; it hooks
+into the slicing itself, so it never appears there and has nothing to click. Everything it
+can be told is in `settings.lua`.
+
+The file lives inside the plugin's bundle directory, next to the plugin's own `.lua`:
+
+```
+~/.config/PrusaSlicer3-dev/lua/com.github.dzwiedziu-nkg.short-extrusion/settings.lua
+```
+
+If you installed the plugin by symlinking your checkout — which is the sane way — that
+path is the symlink and editing the file in the checkout is the same thing.
+
+It is a Lua file that returns one table, so an entry is `key = value,` with the comma, and
+`--` starts a comment. Strings take quotes, booleans are `true` / `false`, and a value in
+`{ }` is a table of its own. Comment a line out and the plugin's built-in default applies:
+
+```lua
+return {
+    min_length = 3.0,   -- the rest keep their defaults
+}
+```
+
+**Save it and slice again — that is all.** No restart, no _Rescan_: the plugin directories
+are read afresh for every slice.
+
+One warning about how it fails. The plugin loads the file inside a `pcall`, so a **syntax
+error is not reported anywhere** — the file is simply ignored and every default applies. If
+a change of yours seems to do nothing at all, that is the first thing to suspect: a missing
+comma, a missing brace, a stray quote.
+
+The keys, in full:
 
 | key | default | meaning |
 |---|---|---|
@@ -80,6 +113,30 @@ allowlist doing its job.
 | `min_length_by_role` | `{}` | Per role overrides of `min_length`. |
 | `filtered_roles` | `Perimeter`, `InternalInfill`, `SolidInfill` | The only roles the filter may touch. |
 | `first_filtered_layer` | `1` | Layers below this index are never filtered; they carry the bed adhesion. |
+
+Two of those take tables rather than numbers, so in full:
+
+```lua
+return {
+    min_length = 2.0,
+    -- Per role, overriding min_length. A role not named here uses min_length.
+    min_length_by_role = {
+        SolidInfill = 3.0,      -- stricter: solid regions carry load
+        InternalInfill = 1.5,   -- looser: nothing depends on a stub in there
+    },
+    -- The allowlist. A role that is not in here is never even considered, so the
+    -- external perimeter, top surfaces, bridges, gap fill, supports and the skirt
+    -- are out of reach by construction. Removing a role from the list is safe;
+    -- adding one is the change to think about.
+    filtered_roles = {Perimeter = true, InternalInfill = true, SolidInfill = true},
+    first_filtered_layer = 1,
+}
+```
+
+The role names are the slicer's own, spelled as in the G-code viewer's legend:
+`Perimeter`, `ExternalPerimeter`, `OverhangPerimeter`, `InternalInfill`, `SolidInfill`,
+`TopSolidInfill`, `Ironing`, `BridgeInfill`, `GapFill`, `Skirt`, `SupportMaterial`,
+`SupportMaterialInterface`, `WipeTower`.
 
 ## Choosing a threshold
 
@@ -96,7 +153,7 @@ sit under top surfaces, so removing pieces of them is more visible.
 **This plugin does not work with an official PrusaSlicer release.** The `slicing.extrusion_filter` API does
 not exist in PrusaSlicer 3.x as shipped; it is added by a fork:
 
-- the fork, branch `main`, which carries all four hooks: https://github.com/dzwiedziu-nkg/PrusaSlicer
+- the fork, branch `main`, which carries all five hooks: https://github.com/dzwiedziu-nkg/PrusaSlicer
 - how to build and run it: https://github.com/dzwiedziu-nkg/PrusaSlicer/blob/main/doc/Build_plugin_fork.md
 - the API contract: `doc/Plugin_API.md` in those sources
 
