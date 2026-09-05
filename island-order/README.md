@@ -66,19 +66,66 @@ the same input; both plugin modes have a spread of 0.2 mm.
 
 ## Settings
 
-`settings.lua` sits next to the plugin. Edit it and re-slice — no restart, no rescan.
+**There is no user interface for this — the file is the interface.** PrusaSlicer's
+_Plugins_ menu, and the parameter dialog behind it, only ever list plugins of type
+`project.plugin`, the ones you invoke yourself. A slicing plugin is not invoked; it hooks
+into the slicing itself, so it never appears there and has nothing to click. Everything it
+can be told is in `settings.lua`.
+
+The file lives inside the plugin's bundle directory, next to the plugin's own `.lua`:
+
+```
+~/.config/PrusaSlicer3-dev/lua/com.github.dzwiedziu-nkg.island-order/settings.lua
+```
+
+If you installed the plugin by symlinking your checkout — which is the sane way — that
+path is the symlink and editing the file in the checkout is the same thing.
+
+It is a Lua file that returns one table, so an entry is `key = value,` with the comma, and
+`--` starts a comment. Strings take quotes, booleans are `true` / `false`, and a value in
+`{ }` is a table of its own. Comment a line out and the plugin's built-in default applies:
+
+```lua
+return {
+    mode = "travel",   -- the rest keep their defaults
+}
+```
+
+**Save it and slice again — that is all.** No restart, no _Rescan_: the plugin directories
+are read afresh for every slice.
+
+One warning about how it fails. The plugin loads the file inside a `pcall`, so a **syntax
+error is not reported anywhere** — the file is simply ignored and every default applies. If
+a change of yours seems to do nothing at all, that is the first thing to suspect: a missing
+comma, a missing brace, a stray quote.
+
+The keys, in full:
 
 | key | default | meaning |
 |---|---|---|
 | `mode` | `"cooling"` | `"cooling"` layer-stable, alternating walk. `"travel"` shortest travel, seeded from the head, reverses every layer. `"stock"` leave the slicer's order alone, for A/B. |
 | `max_two_opt_islands` | `100` | Above this many islands on a layer, 2-opt is skipped and the greedy chain is used as is. |
 
+In full, which is the whole file:
+
+```lua
+return {
+    mode = "cooling",
+    max_two_opt_islands = 100,
+}
+```
+
+`mode` is the only one worth touching. `"stock"` is there to A/B against the slicer's own
+order without uninstalling anything, and `"travel"` is the shortest-travel order that the
+measurements below argue against — it is kept because it is the right answer for a print
+with no cooling problem to begin with.
+
 ## Requirements
 
 **This plugin does not work with an official PrusaSlicer release.** The `slicing.island_order` API does
 not exist in PrusaSlicer 3.x as shipped; it is added by a fork:
 
-- the fork, branch `main`, which carries all four hooks: https://github.com/dzwiedziu-nkg/PrusaSlicer
+- the fork, branch `main`, which carries all five hooks: https://github.com/dzwiedziu-nkg/PrusaSlicer
 - how to build and run it: https://github.com/dzwiedziu-nkg/PrusaSlicer/blob/main/doc/Build_plugin_fork.md
 - the API contract: `doc/Plugin_API.md` in those sources
 
