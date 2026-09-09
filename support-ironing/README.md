@@ -49,19 +49,31 @@ inside a support layer took three small engine changes, written up in `STATUS.md
 
 ## Settings, and what they cost
 
-`settings.lua` carries the defaults; the two that matter are `spacing` (0.1 mm, the same as
-the slicer's own `ironing_spacing`) and `flow_ratio` (0.15, the same as `ironing_flowrate`).
+`settings.lua` carries the defaults. The two that matter are `spacing` (0.2 mm) and
+`flow_ratio` (0.15, the same as the slicer's own `ironing_flowrate`).
 
-The pass is not cheap, and the cost is linear in `1 / spacing`. Sliced on a CORE One 0.4 HF,
-0.20 mm SPEED, supports on everywhere:
+**Read `STATUS.md` 6.33 before lowering `spacing`.** What a pass extrudes per second is
+`flow_ratio x layer_height x spacing x ironing_speed`, and at the slicer's own ironing
+defaults that is 0.068 mm3/s — a ninetieth of the flow that laid down the surface being
+ironed, held without a break for as long as the pass lasts. That is how an ironing pass clogs
+a nozzle. `spacing = 0.2` with `ironing_speed = 30` in the print profile gives 0.270 mm3/s and
+cuts the pass to a quarter of the time, depositing exactly the same amount of plastic.
 
-| model | interface | ironing added | filament | estimated time |
-|---|---|---|---|---|
-| `wave_overhang.stl` | 20 x 20 mm | 3 763 mm over 192 lines | 1 521.2 -> 1 528.3 mm | 11m45s -> 16m00s |
-| `wave_overhang_shapes.stl` | 60 x 20 mm, notched | 13 524 mm over 632 lines | 3 836.6 -> 3 861.9 mm | 21m46s -> 37m14s |
+Sliced on a CORE One, plain 0.4 nozzle, 0.20 mm SPEED, supports on everywhere,
+`ironing_speed = 30`:
 
-Nothing else in either file changed: every other extrusion role comes out at exactly the
-same length and move count. The pass is purely additive, and `spacing = 0.2` halves it.
+| model | interface | ironing added | unbroken | filament | estimated time |
+|---|---|---|---|---|---|
+| `wave_overhang.stl` | 20 x 20 mm | 1 882 mm over 96 lines | 1.0 min | 1 521.2 -> 1 528.3 mm | 11m45s -> 12m48s |
+| `wave_overhang_shapes.stl` | 60 x 20 mm, notched | 6 762 mm over 316 lines | 3.8 min | 3 836.6 -> 3 861.9 mm | 21m46s -> 25m35s |
+
+Nothing else in either file changed: every other extrusion role comes out at exactly the same
+length and move count. The pass is purely additive, and it costs 20 mm of travel on the square
+and 146 mm on the notched model.
+
+Prefer a standard nozzle to a high flow one for this. A high flow nozzle earns its name with a
+longer melt zone, and at the flow rate an ironing pass runs at, longer melt zone means longer
+cooking.
 
 ## Running it
 

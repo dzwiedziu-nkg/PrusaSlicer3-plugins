@@ -5,12 +5,28 @@
 -- defaults below apply. That is the first thing to suspect when a setting does nothing.
 
 return {
-    -- Distance between two ironing lines, in mm. The same quantity as the profile's
-    -- `ironing_spacing`, whose default is 0.1, and the plugin does not read that setting -
-    -- the hook hands over a surface, not the print profile.
+    -- Distance between two ironing lines, in mm.
     --
-    -- Closer lines melt the ridges down more evenly and cost proportionally more time.
-    spacing = 0.1,
+    -- The slicer's own `ironing_spacing` defaults to 0.1. This defaults to 0.2, and the
+    -- reason is the extruder rather than the finish. What a pass puts down per second is
+    --
+    --     mm3/s = flow_ratio x layer_height x spacing x ironing_speed
+    --
+    -- which at 0.15 x 0.3 x 0.1 x 15 is 0.068 mm3/s - about one ninetieth of what the same
+    -- nozzle moves while printing the interface underneath, held without a break for as
+    -- long as the pass lasts. Filament then advances 1.7 mm per minute, so what is in the
+    -- melt zone when the pass starts is still in it when the pass ends, cooking. That is
+    -- how a nozzle clogs on an ironing pass, and 0.1 mm spacing over a 60 x 20 mm interface
+    -- means fifteen unbroken minutes of it.
+    --
+    -- 0.2 halves the path and doubles the flow at once. A support interface is a mould, not
+    -- a surface anyone will look at; the ridges being knocked down are 0.2 mm apart and the
+    -- ironing bead is 0.4 mm wide, so the lines still overlap each other by half.
+    --
+    -- Raise `ironing_speed` in the print profile as well - 30 mm/s halves the time and
+    -- doubles the flow again - and prefer a standard nozzle to a high flow one, whose
+    -- longer melt zone holds the material at temperature for longer at any given flow.
+    spacing = 0.2,
 
     -- Fraction of a full layer of material the pass lays down, 0.0 to 1.0.
     --
