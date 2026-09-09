@@ -28,7 +28,8 @@ local ok, user_settings = pcall(require, "settings")
 local settings = (ok and type(user_settings) == "table") and user_settings or {}
 
 local spacing = settings.spacing or 0.1
-local flow_ratio = settings.flow_ratio == nil and 0.15 or settings.flow_ratio
+local flow_ratio = settings.flow_ratio == nil and 0.12 or settings.flow_ratio
+local min_flow = settings.min_flow == nil and 0.2 or settings.min_flow
 local angle_offset = settings.angle_offset == nil and 45.0 or settings.angle_offset
 local angle_absolute = settings.angle
 local object_facing_only = settings.object_facing_only == nil and true
@@ -203,6 +204,23 @@ function plan_pass(surface)
         return nil
     end
 
+    -- What the pass costs the extruder is a rate: flow_ratio x layer_height x spacing x
+    -- speed. Held far too low for long enough, that is how an ironing pass clogs a nozzle
+    -- (STATUS.md 6.33), and the two terms the plugin does not control - the height of the
+    -- contact layer and the profile's ironing_speed - move underneath it. So widen the
+    -- lines until the rate clears min_flow. Deposit per unit area is flow_ratio x
+    -- layer_height whatever the spacing is, so this costs line density and nothing else.
+    local pass_spacing = spacing
+    if min_flow > 0.0 and surface.pass_speed and surface.pass_speed > 0.0 then
+        local per_mm_of_spacing = flow_ratio * surface.layer_height * surface.pass_speed
+        if per_mm_of_spacing > 0.0 then
+            local needed = min_flow / per_mm_of_spacing
+            -- Past a nozzle width the beads stop touching and it is not ironing any more,
+            -- so that is where widening stops even if the rate is still short.
+            pass_spacing = math.min(math.max(pass_spacing, needed), surface.nozzle_diameter)
+        end
+    end
+
     -- Cross the interface lines rather than retrace them: a pass along the ridges rides in
     -- the valley between two of them and flattens neither.
     local angle = angle_absolute ~= nil and angle_absolute * DEG
@@ -216,13 +234,13 @@ function plan_pass(surface)
 
     -- Half a spacing in from the first edge, so the outermost line is not exactly on it.
     local lines = {}
-    local y = min_y + spacing * 0.5
+    local y = min_y + pass_spacing * 0.5
     while y < max_y do
         local spans = spans_at(edges, y)
         if #spans > 0 then
             lines[#lines + 1] = {y = y, spans = spans}
         end
-        y = y + spacing
+        y = y + pass_spacing
     end
 
     local runs = build_runs(lines)
@@ -258,5 +276,5 @@ function plan_pass(surface)
     if #paths == 0 then
         return nil
     end
-    return {paths = paths, spacing = spacing, flow_ratio = flow_ratio}
+    return {paths = paths, spacing = pass_spacing, flow_ratio = flow_ratio}
 end
