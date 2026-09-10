@@ -14,9 +14,22 @@ thing as `support_ironing`, with `support_ironing_pattern`, `support_ironing_flo
 `support_ironing_spacing`. **PrusaSlicer has no equivalent** — it irons top surfaces only
 (`ironing_type`), and supports not at all.
 
-> **Status: it slices; it has not been printed.** The hook, the plugin and the tests are in
-> place and both test models come out with an ironing pass over the support contact layer.
-> Everything below about print quality is the argument for doing it, not a result.
+**What this has that they do not is the purge.** An ironing pass holds the extruder at about a
+hundredth of its ordinary flow for as long as the pass lasts, and on a large interface that is
+minutes. It is how an ironing pass clogs a nozzle, and it happened here repeatedly before the
+plugin learned to break the pass up and push plain plastic through the nozzle in the gaps —
+laid in the room the object's own infill leaves, so nothing is wasted and nothing needs a
+tower. Every slicer named above will happily hand you a pass that cooks the melt; this one
+counts the seconds and does something about them. That is the whole of the difference.
+
+![The pass and the purge in the preview](doc/support_ironing.png)
+
+The preview says it in one picture. On the right, **salmon** is the ironing pass covering the
+support interface — dense, at a tenth of a millimetre — with a strip of ordinary interface in
+**dark green** beside it for comparison, its lines half a millimetre apart. On the left, the
+neighbouring island: **dark red** is its own sparse infill grid, and the **purple** patches
+between the grid squares are the purge, laid in the room the grid leaves. Those patches are
+what keeps the nozzle clear while the salmon field is being laid.
 
 ## Why iron the mould rather than avoid it
 
@@ -105,7 +118,8 @@ spends this much at each break — inside the part, at the same Z so nothing sta
 the next layer's nozzle, needing no wipe tower and no space on the bed. The cost is filament,
 which stays in the object as extra material. A melt zone is 15-40 mm3, which is the scale at
 which a break turns it over; room is finite (about 98 mm3 on the test model) and the log says
-so when it finds less. Measured: three runs become four of ~56 s, the gaps grow from 1.6/2.1 s
+so when it finds less. **This is the setting that exists to stop the pass clogging the nozzle**,
+and no other slicer's support ironing has anything like it. Measured: three runs become four of ~56 s, the gaps grow from 1.6/2.1 s
 to 4.6/5.1/2.2 s, and 90.9 mm3 goes through the nozzle across three breaks — 30.3 mm3 each
 against the 30.0 asked for, at a cost of 0.11 g and 18 s. Needs engine API 1.3.0.
 
@@ -124,13 +138,28 @@ Sliced on a CORE One, plain 0.4 nozzle, 0.20 mm SPEED, supports everywhere,
 Nothing else in either file changed: every other extrusion role comes out at exactly the same
 length and move count.
 
-## Expect the supports to be harder to remove
+## What it is worth, from the prints
 
-Adhesion and finish are the same quantity seen twice. The object is cast against the interface
-and binds to it exactly where the two touch, so anything that makes the mould flatter makes
-the bond stronger. A comparison against OrcaSlicer's support ironing on a real print made this
-plain: theirs needed a knife to prise off and left the better surface, ours came away easily
-and left the worse one. Supports that need a knife are the receipt.
+Two things, and the second was the surprise.
+
+**The surface is a little better.** The lettering on the ironed underside reads more cleanly
+than on the same part printed without the pass. A little, not transformed — this is a finish
+that is limited by the mould it is cast in, and the pass is making the mould flatter, not
+making a new one.
+
+**The support comes off in one piece.** It has to be prised with a sharp knife rather than
+pulled, but once started it lifts away whole and **leaves nothing behind**. Without the pass
+there were always some remnants of interface stuck to the part that had to be picked off. That
+is a better trade than it sounds: a support that needs a knife and leaves a clean face beats
+one that peels easily and leaves work.
+
+Adhesion and finish are the same quantity seen twice, which is why those two arrive together.
+The object is cast against the interface and binds to it exactly where the two touch, so
+anything that makes the mould flatter makes the bond stronger. Supports that need a knife are
+the receipt for the surface, not a fault to fix — but the trade does have an end, and on the
+test part it is close to it. Raising `flow_ratio` past the point where the pass fills the
+interface valleys starts closing `support_material_contact_distance`, and then the support is
+welded on rather than stuck on.
 
 ## Running it
 
