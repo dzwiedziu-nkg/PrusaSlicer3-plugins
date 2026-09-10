@@ -28,9 +28,10 @@ local ok, user_settings = pcall(require, "settings")
 local settings = (ok and type(user_settings) == "table") and user_settings or {}
 
 local spacing = settings.spacing or 0.1
-local flow_ratio = settings.flow_ratio == nil and 0.12 or settings.flow_ratio
+local flow_ratio_setting = settings.flow_ratio
 local min_flow = settings.min_flow == nil and 0.2 or settings.min_flow
 local max_run_time = settings.max_run_time == nil and 60.0 or settings.max_run_time
+local purge_volume = settings.purge_volume == nil and 30.0 or settings.purge_volume
 local angle_offset = settings.angle_offset == nil and 45.0 or settings.angle_offset
 local angle_absolute = settings.angle
 local object_facing_only = settings.object_facing_only == nil and true
@@ -205,6 +206,29 @@ function plan_pass(surface)
         return nil
     end
 
+    -- How much to lay down, when the setting does not say.
+    --
+    -- The pass is supposed to fill the valleys between the interface lines, and the interface
+    -- is fully described by what the hook already hands over: lines of `extrusion_width` by
+    -- `layer_height`, with rounded sides, laid `spacing` apart. A solid slab of that height
+    -- over one spacing would be `spacing x layer_height`; the lines themselves are
+    -- `width x height - height^2 (1 - pi/4)`. What is missing is the valleys.
+    --
+    -- Deposit over the area is `flow_ratio x layer_height` whatever the line spacing of the
+    -- pass, so the fraction that fills them exactly is the fraction of the slab they are.
+    -- Measured against G-code on the test interface this comes out at 0.3975 where filling
+    -- the valleys by hand needed 0.40.
+    local flow_ratio = flow_ratio_setting
+    if flow_ratio == nil then
+        local bead = surface.extrusion_width * surface.layer_height
+            - surface.layer_height * surface.layer_height * (1.0 - math.pi / 4.0)
+        local slab = surface.spacing * surface.layer_height
+        flow_ratio = slab > 0.0 and (1.0 - bead / slab) or 0.15
+        -- An interface printed solid has no valleys to fill and wants a reheat, not a layer.
+        if flow_ratio < 0.0 then flow_ratio = 0.0 end
+        if flow_ratio > 1.0 then flow_ratio = 1.0 end
+    end
+
     -- What the pass costs the extruder is a rate: flow_ratio x layer_height x spacing x
     -- speed. Held far too low for long enough, that is how an ironing pass clogs a nozzle
     -- (STATUS.md 6.33), and the two terms the plugin does not control - the height of the
@@ -287,5 +311,6 @@ function plan_pass(surface)
         spacing = pass_spacing,
         flow_ratio = flow_ratio,
         max_run_time = max_run_time,
+        purge_volume = purge_volume,
     }
 end

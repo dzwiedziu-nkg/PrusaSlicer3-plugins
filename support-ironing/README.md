@@ -49,8 +49,9 @@ inside a support layer took three small engine changes, written up in `STATUS.md
 
 ## Settings, and what they cost
 
-`settings.lua` carries the defaults: `spacing = 0.1`, `flow_ratio = 0.12`, `min_flow = 0.2`,
-`max_run_time = 60`. **They pair with `ironing_speed = 60` in the print profile** — see below.
+`settings.lua` carries the defaults: `spacing = 0.1`, `flow_ratio = nil` (worked out),
+`min_flow = 0.2`, `max_run_time = 60`, `purge_volume = 30`. **They pair with
+`ironing_speed = 60` in the print profile** — see below.
 
 What the pass costs the extruder is a rate, not a quantity:
 
@@ -64,6 +65,21 @@ ordinary printing, held four times as long, which is how an ironing pass clogs a
 of those four terms are not the plugin's to set, so `min_flow` guards the product: the lines
 widen until the rate clears it, which costs line density and nothing else, because deposit per
 unit area is `flow_ratio x layer_height` whatever the spacing is.
+
+**`flow_ratio` is worked out rather than guessed.** The pass is meant to fill the valleys
+between the interface lines, and the interface is fully described by what the hook hands over.
+A solid slab one layer high over one line spacing is `spacing x h`; the lines themselves are
+`width x h - h^2 (1 - pi/4)`; the difference is the valleys. Deposit over the area is
+`flow_ratio x h` whatever the pass's own spacing, so:
+
+```
+flow_ratio = 1 - (width x h - h^2 (1 - pi/4)) / (spacing x h)
+```
+
+Checked against G-code: predicted bead cross-section 0.1007 mm2 against 0.1007 measured, and
+0.3975 where filling the valleys by hand needed 0.40. Set a number to pin it — lower irons
+without filling, and higher builds rather than irons, until the deposit closes
+`support_material_contact_distance` and welds the support to the object.
 
 **`max_run_time` guards the other half, and it is the half a large surface cannot escape.**
 What starves an extruder is a low flow *held for a long time*: the melt stops turning over and
@@ -81,7 +97,18 @@ above that turns one 226 s run into three of 75 s, with **19 and 23 mm3 pushed t
 nozzle in the two gaps at 11-12 mm3/s**: a full turnover of the melt zone each time, at 55x
 the ironing rate. Nothing is added to the print and nothing is wasted; only the order changes.
 A layer with nothing to interleave with runs the pass unbroken rather than pausing on the
-surface it is smoothing. Needs engine API 1.2.0.
+surface it is smoothing.
+
+**`purge_volume` is what makes those breaks work when the layer has little of its own to
+give.** One island is one break; a pass needing seven has nowhere else to go. So the slicer
+lays plain extrusion in the room the object's own sparse infill leaves on the same layer and
+spends this much at each break — inside the part, at the same Z so nothing stands proud for
+the next layer's nozzle, needing no wipe tower and no space on the bed. The cost is filament,
+which stays in the object as extra material. A melt zone is 15-40 mm3, which is the scale at
+which a break turns it over; room is finite (about 98 mm3 on the test model) and the log says
+so when it finds less. Measured: three runs become four of ~56 s, the gaps grow from 1.6/2.1 s
+to 4.6/5.1/2.2 s, and 90.9 mm3 goes through the nozzle across three breaks — 30.3 mm3 each
+against the 30.0 asked for, at a cost of 0.11 g and 18 s. Needs engine API 1.3.0.
 
 Prefer a standard nozzle to a high flow one for this. A high flow nozzle earns its name with a
 longer melt zone, and at the flow rate an ironing pass runs at, longer melt zone means longer

@@ -30,7 +30,18 @@ return {
     --
     -- It is not zero because a nozzle dragging over a surface with no pressure behind it
     -- picks material up rather than leaving it.
-    flow_ratio = 0.12,
+    -- Fraction of a full layer of material the pass lays down. nil works it out.
+    --
+    -- Left unset, the plugin computes the fraction that fills the valleys between the
+    -- interface lines exactly, from the interface geometry the hook hands it: a solid slab
+    -- one layer high over one line spacing, less the lines themselves, is what the valleys
+    -- hold. On the test interface that is 0.3975. Printing at 0.24 filled them about 60 %,
+    -- which is what the owner saw on the part and called "half".
+    --
+    -- Set a number to pin it. Lower irons without filling; higher builds rather than irons,
+    -- and past the point where the deposit closes support_material_contact_distance it welds
+    -- the support to the object.
+    flow_ratio = nil,
 
     -- Lowest volumetric flow the pass may run at, in mm3/s. 0 turns the guard off.
     --
@@ -58,6 +69,20 @@ return {
     -- break and costs nothing but travel. A layer with nothing to interleave with runs
     -- the pass unbroken rather than pausing on the surface it is smoothing.
     max_run_time = 60.0,
+
+    -- How much plain plastic to put through the nozzle at each of those breaks, in mm3.
+    --
+    -- A break is only worth taking if something moves while it lasts. The layer's own work is
+    -- spent first and costs nothing, but a layer often has one island to give and a long pass
+    -- needs more breaks than that, so the slicer also lays plain extrusion in the room the
+    -- object's own sparse infill leaves on this layer: inside the part, at the same Z so
+    -- nothing stands proud for the next layer's nozzle, needing no tower and no space on the
+    -- bed. It costs filament, which stays in the object as extra material.
+    --
+    -- A melt zone is 15-40 mm3, so that is the scale at which a break turns it over. There is
+    -- only so much room on a layer - about 98 mm3 on the test model - and the log says so when
+    -- it finds less than was asked for. 0 spends only the layer's own work.
+    purge_volume = 30.0,
 
     -- Angle between the ironing lines and the interface lines, in degrees.
     --
