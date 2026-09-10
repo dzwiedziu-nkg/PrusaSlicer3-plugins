@@ -1,0 +1,186 @@
+# Sequential islands — a PrusaSlicer slicing plugin
+
+This experimental `slicing.island_sequence` plugin prints independent upper parts of
+one object sequentially after they split from a common base. In `house.3mf`, the common
+house body is printed normally; after it separates into two gable peaks, one peak is
+finished to the top before the nozzle returns down to print the other.
+
+## Ordering and the branch transition
+
+The plugin follows PrusaSlicer's own `overlaps_above` / `overlaps_below` graph. It does
+not infer structural continuity from bounding boxes. A split is accepted only when all
+descendants stay assigned to exactly one root branch and every branch lasts for at least
+`min_branch_layers`.
+
+Branches farthest from the tool dock print first:
+
+- `COREONE_INDX*` and other front-dock machines: larger Y first;
+- Prusa XL rear dock: smaller Y first.
+
+Before Z moves down to the next branch, the slicer:
+
+1. wipes backwards on the last extrusion path while retracting (normally top infill),
+   capped by `wipe_distance`;
+2. raises Z by `z_clearance`;
+3. moves XY at that high Z until it is above the first extrusion of the next branch;
+4. only then descends to the branch's first layer.
+
+Immediately after a downward move, that island exceptionally prints infill before its
+perimeters. The hidden infill becomes a long, model-contained purge/wipe and the visible
+walls are laid down only after the nozzle flow has stabilised. If a particular layer has
+no infill, the slicer simply starts with the first available perimeter.
+
+The G-code contains `ISLAND_SEQUENCE_TRANSITION_BEGIN/END` comments around this move.
+
+![One branch finished to the top before the other is started](doc/sequential_parts.png)
+
+Both screenshots are with the plugin on. Here there is room for the head to finish a whole
+branch: the far tower is complete to its top while the near one has barely started, which is
+the plugin printing the branch farthest from the tool dock first. The warning is the one
+described under *Safety envelope* — this printer is not one whose head geometry the engine
+checks, so clearing the finished tower is the user's call.
+
+## Safety envelope
+
+Version 0.1 deliberately activates only for:
+
+- one FFF object with one instance;
+- no supports or raft;
+- no wipe tower;
+- no infinite skirt;
+- no spiral-vase or ordinary complete-objects mode;
+- no height-based custom G-code, color changes, or pauses.
+
+For Original Prusa CORE One (`printer_model = COREONE`), the plugin and the engine both
+use PrusaSlicer's fallback sequential-print geometry: a 10 x 10 mm nozzle footprint, a
+square with the profile's 75 mm clearance radius from 1 mm above the nozzle, and the X
+gantry from the profile's 33 mm clearance height. The preferred full branch order is
+checked first, then the reversed full order. If both collide, the upper branches are split
+into the tallest collision-free horizontal parties and each party tries both orders.
+
+The engine independently validates the final schedule and rejects it if it collides. The
+ordinary high-severity unchecked-collision warning is therefore suppressed for CORE One.
+Other printer models, including COREONE INDX and XL for now, retain the warning and remain
+the user's responsibility.
+
+![Two branches taken in horizontal parties, neither finished to the top](doc/parts_of_sequnces.png)
+
+The same plugin on a part where finishing either branch whole would put the head through the
+other one. Neither tower is complete: they are climbing in collision-free parties, a few
+tenths of a millimetre at a time, alternating. It is less of a win than the case above — the
+head still crosses between the branches — but every crossing that is avoided is one that
+cannot ooze, and the schedule is checked rather than assumed.
+
+If no persistent split is found, the overlap graph is ambiguous, or the returned plan
+fails the engine's dependency/coverage validation, slicing falls back to normal layer
+order.
+
+Strict branch completion may increase the number of tool changes on a multi-tool print:
+each branch needs its own tool-change cycle on a physical layer. This can increase the
+time and filament consumed by tool-change priming even though the model extrusion paths
+are emitted exactly once.
+
+## Validation on `house.3mf`
+
+The Core One INDX project has 281 physical layers. The plugin detects the split at
+Z = 17.6 mm and produces 475 scheduling steps. It prints the larger-Y (rear) peak first
+through Z = 56.2 mm, wipes over top solid infill, rises to Z = 56.8 mm, moves above the
+smaller-Y (front) peak, and only then descends to Z = 17.6 mm.
+
+A control export and the sequential export contain identical positive model-extrusion
+totals in every G-code role. The sequential export does contain more INDX tool changes,
+as described above.
+
+## Validation on `niaczek_garaz.3mf`
+
+The two narrow door islands separate at Z = 4.2 mm and end at Z = 9.0 mm. Completing one
+whole island would collide with the CORE One head, so version 0.2 divides the sequence into
+five collision-free parties, each no taller than 0.8 mm. Every party transition raises Z,
+moves above the other island, descends, prints internal/solid infill first, and only then
+prints its perimeters.
+
+## Settings
+
+**There is no user interface for this — the file is the interface.** PrusaSlicer's
+_Plugins_ menu, and the parameter dialog behind it, only ever list plugins of type
+`project.plugin`, the ones you invoke yourself. A slicing plugin is not invoked; it hooks
+into the slicing itself, so it never appears there and has nothing to click. Everything it
+can be told is in `settings.lua`.
+
+The file lives inside the plugin's bundle directory, next to the plugin's own `.lua`:
+
+```
+~/.config/PrusaSlicer3-dev/lua/com.github.dzwiedziu-nkg.sequential-islands/settings.lua
+```
+
+If you installed the plugin by symlinking your checkout — which is the sane way — that
+path is the symlink and editing the file in the checkout is the same thing.
+
+It is a Lua file that returns one table, so an entry is `key = value,` with the comma, and
+`--` starts a comment. Strings take quotes, booleans are `true` / `false`, and a value in
+`{ }` is a table of its own. Comment a line out and the plugin's built-in default applies:
+
+```lua
+return {
+    dock_edge = "front",   -- the rest keep their defaults
+}
+```
+
+**Save it and slice again — that is all.** No restart, no _Rescan_: the plugin directories
+are read afresh for every slice.
+
+One warning about how it fails. The plugin loads the file inside a `pcall`, so a **syntax
+error is not reported anywhere** — the file is simply ignored and every default applies. If
+a change of yours seems to do nothing at all, that is the first thing to suspect: a missing
+comma, a missing brace, a stray quote.
+
+The keys, in full:
+
+| key | default | meaning |
+|---|---:|---|
+| `dock_edge` | `"auto"` | `"front"`, `"rear"`, or detect XL as rear and everything else as front |
+| `min_branch_layers` | `3` | minimum lifetime of every root branch |
+| `wipe_distance` | `2.0` mm | cap on the transition wipe |
+| `z_clearance` | `0.6` mm | rise before the high XY move |
+
+In full, which is the whole file:
+
+```lua
+return {
+    dock_edge = "auto",
+    min_branch_layers = 3,
+    wipe_distance = 2.0,
+    z_clearance = 0.6,
+}
+```
+
+`dock_edge` says which side of the bed the head parks on between branches, because that
+is what decides which way the gantry sweeps and therefore what it can hit; `"auto"` reads
+it off the printer model. The other three are safety margins — raise `z_clearance` if the
+head clips a finished branch, raise `min_branch_layers` if too little of the print is
+being sequenced to be worth it.
+
+## Requirements and installation
+
+**This plugin does not work with an official PrusaSlicer release.** The
+`slicing.island_sequence` API does not exist in PrusaSlicer 3.x as shipped; it is added by a
+fork:
+
+- the fork, branch `main`, which carries all five hooks: https://github.com/dzwiedziu-nkg/PrusaSlicer
+- how to build and run it: https://github.com/dzwiedziu-nkg/PrusaSlicer/blob/main/doc/Build_plugin_fork.md
+- the API contract: `doc/Plugin_API.md` in those sources
+
+Prusa have said they intend to expose the slicing pipeline to plugins themselves. When they
+do, this plugin should be rewritten against their interface and the fork dropped.
+
+```bash
+ln -s "$PWD/com.github.dzwiedziu-nkg.sequential-islands" ~/.config/PrusaSlicer/lua/
+```
+
+The bundle directory name must match the manifest `id`. The plugin is automatic and has
+no menu item. The log confirms `Island sequencing plugin in use` and whether a plan was
+accepted.
+
+## License
+
+AGPL-3.0-only, the same licence as PrusaSlicer itself. The full text is in `LICENSE`.
