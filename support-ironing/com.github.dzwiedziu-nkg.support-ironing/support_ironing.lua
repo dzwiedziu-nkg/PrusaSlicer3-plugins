@@ -30,6 +30,7 @@ local settings = (ok and type(user_settings) == "table") and user_settings or {}
 local spacing = settings.spacing or 0.1
 local flow_ratio = settings.flow_ratio == nil and 0.12 or settings.flow_ratio
 local min_flow = settings.min_flow == nil and 0.2 or settings.min_flow
+local max_run_time = settings.max_run_time == nil and 60.0 or settings.max_run_time
 local angle_offset = settings.angle_offset == nil and 45.0 or settings.angle_offset
 local angle_absolute = settings.angle
 local object_facing_only = settings.object_facing_only == nil and true
@@ -276,5 +277,15 @@ function plan_pass(surface)
     if #paths == 0 then
         return nil
     end
-    return {paths = paths, spacing = pass_spacing, flow_ratio = flow_ratio}
+    -- Widening the lines fixes the rate but not the dose, and on a large surface the two
+    -- cannot both be fixed: the pass takes area / (spacing x speed), so holding a 0.1 mm
+    -- spacing over 1352 mm2 at 60 mm/s is 226 s however the flow is set. Measured, 226 s
+    -- clogs and 63-66 s does not (STATUS.md 6.36), so say how long the pass dares run and
+    -- let the slicer spend the layer's other work in the gaps.
+    return {
+        paths = paths,
+        spacing = pass_spacing,
+        flow_ratio = flow_ratio,
+        max_run_time = max_run_time,
+    }
 end

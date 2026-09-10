@@ -46,6 +46,19 @@ return {
     -- should be pushed. See STATUS.md 6.33.
     min_flow = 0.2,
 
+    -- Longest the pass may run without a break, in seconds. 0 runs it in one piece.
+    --
+    -- min_flow fixes the rate the extruder is held at; this fixes how long it is held
+    -- there, which is the other half of the same problem and the one a large surface
+    -- cannot escape: the pass takes area / (spacing x speed), so a fine spacing over a
+    -- big interface is minutes whatever the flow. Measured on wave_overhang_shapes at
+    -- 225 C: 226 s clogged the nozzle, while 63 s and Orca's 66 s at the same flow did
+    -- not. When the pass runs longer than this the slicer breaks it up and prints one of
+    -- the layer's other islands in each gap, which pulls fresh filament through the heat
+    -- break and costs nothing but travel. A layer with nothing to interleave with runs
+    -- the pass unbroken rather than pausing on the surface it is smoothing.
+    max_run_time = 60.0,
+
     -- Angle between the ironing lines and the interface lines, in degrees.
     --
     -- 90 crosses every ridge head on, which flattens the most per pass and makes the nozzle

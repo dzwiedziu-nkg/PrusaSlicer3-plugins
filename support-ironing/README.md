@@ -49,8 +49,8 @@ inside a support layer took three small engine changes, written up in `STATUS.md
 
 ## Settings, and what they cost
 
-`settings.lua` carries the defaults: `spacing = 0.1`, `flow_ratio = 0.12`, `min_flow = 0.2`.
-**They pair with `ironing_speed = 60` in the print profile** — see below.
+`settings.lua` carries the defaults: `spacing = 0.1`, `flow_ratio = 0.12`, `min_flow = 0.2`,
+`max_run_time = 60`. **They pair with `ironing_speed = 60` in the print profile** — see below.
 
 What the pass costs the extruder is a rate, not a quantity:
 
@@ -64,6 +64,24 @@ ordinary printing, held four times as long, which is how an ironing pass clogs a
 of those four terms are not the plugin's to set, so `min_flow` guards the product: the lines
 widen until the rate clears it, which costs line density and nothing else, because deposit per
 unit area is `flow_ratio x layer_height` whatever the spacing is.
+
+**`max_run_time` guards the other half, and it is the half a large surface cannot escape.**
+What starves an extruder is a low flow *held for a long time*: the melt stops turning over and
+the filament above the heat break, having stopped moving, stops carrying heat away. A pass
+takes `area / (spacing x ironing_speed)`, so a fine spacing over a big interface is minutes
+however the flow is set. Measured at 225 °C on a 1352 mm2 interface: **226 s unbroken clogged
+the nozzle; 63 s at the same flow did not.** Reaching 66 s by widening the lines alone needs a
+0.347 mm spacing — the interface's own pitch, at which the pass stops doing anything — and
+holding 0.1 mm while finishing in 66 s would need 205 mm/s. There is no setting that buys
+both.
+
+So the plugin says how long it dares run and the slicer breaks the pass up, printing one piece
+of the layer's own work — an island's perimeters, or its infill — in each gap. On the model
+above that turns one 226 s run into three of 75 s, with **19 and 23 mm3 pushed through the
+nozzle in the two gaps at 11-12 mm3/s**: a full turnover of the melt zone each time, at 55x
+the ironing rate. Nothing is added to the print and nothing is wasted; only the order changes.
+A layer with nothing to interleave with runs the pass unbroken rather than pausing on the
+surface it is smoothing. Needs engine API 1.2.0.
 
 Prefer a standard nozzle to a high flow one for this. A high flow nozzle earns its name with a
 longer melt zone, and at the flow rate an ironing pass runs at, longer melt zone means longer
