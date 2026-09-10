@@ -231,7 +231,7 @@ function plan_pass(surface)
 
     -- What the pass costs the extruder is a rate: flow_ratio x layer_height x spacing x
     -- speed. Held far too low for long enough, that is how an ironing pass clogs a nozzle
-    -- (STATUS.md 6.33), and the two terms the plugin does not control - the height of the
+    --, and the two terms the plugin does not control - the height of the
     -- contact layer and the profile's ironing_speed - move underneath it. So widen the
     -- lines until the rate clears min_flow. Deposit per unit area is flow_ratio x
     -- layer_height whatever the spacing is, so this costs line density and nothing else.
@@ -304,7 +304,7 @@ function plan_pass(surface)
     -- Widening the lines fixes the rate but not the dose, and on a large surface the two
     -- cannot both be fixed: the pass takes area / (spacing x speed), so holding a 0.1 mm
     -- spacing over 1352 mm2 at 60 mm/s is 226 s however the flow is set. Measured, 226 s
-    -- clogs and 63-66 s does not (STATUS.md 6.36), so say how long the pass dares run and
+    -- clogs and 63-66 s does not, so say how long the pass dares run and
     -- let the slicer spend the layer's other work in the gaps.
     return {
         paths = paths,

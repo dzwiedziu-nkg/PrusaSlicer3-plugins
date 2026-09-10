@@ -18,14 +18,13 @@ thing as `support_ironing`, with `support_ironing_pattern`, `support_ironing_flo
 > place and both test models come out with an ironing pass over the support contact layer.
 > Everything below about print quality is the argument for doing it, not a result.
 
-## Why this and not the overhang planner
+## Why iron the mould rather than avoid it
 
-This repository's sibling, `wave-overhang-plugin`, attacks the same problem — a good-looking
-horizontal underside — from the other end, by printing the overhang with no support at all.
-It is parked (see `STATUS.md` 6.31). The two are not competitors so much as opposite trades:
-waves cost print time and reliability and give up supports; ironing keeps the supports and
-spends a little time making their top flat. The second is the far safer bet and is what
-several other slicers already ship.
+A good-looking horizontal underside can be chased from either end: make the support's top
+flat, or find a way to print the overhang without support at all. The second is the more
+interesting problem and the far riskier one — it trades print time and reliability for it —
+while this costs a minute a layer, keeps the supports, and is what several other slicers
+already ship. That is the whole argument for starting here.
 
 ## The hook it needs
 
@@ -45,7 +44,7 @@ out of the overhang experiment. Support interface ironing is one caller of it.
 
 Paths come back with role `Ironing`, so the pass prints at `ironing_speed` and is coloured
 as ironing in the preview without the plugin having to ask for either. Getting that to hold
-inside a support layer took three small engine changes, written up in `STATUS.md` 6.32.
+inside a support layer took three small engine changes, all of them in the fork.
 
 ## Settings, and what they cost
 

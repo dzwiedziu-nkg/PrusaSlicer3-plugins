@@ -8,7 +8,7 @@ return {
     -- Distance between two ironing lines, in mm.
     --
     -- 0.1 matches what a comparison against OrcaSlicer's own support ironing showed working
-    -- on a real print (STATUS.md 6.35): its interface came out visibly smoother than ours at
+    -- on a real print: its interface came out visibly smoother than ours at
     -- 0.2, and it irons at 0.1.
     --
     -- **This pairs with `ironing_speed = 60` in the print profile.** What the pass costs the
@@ -54,7 +54,7 @@ return {
     --
     -- 0.2 is derived rather than measured: melt zone volume divided by flow is the time a
     -- given parcel of PLA spends at temperature, and a couple of minutes is as far as PLA
-    -- should be pushed. See STATUS.md 6.33.
+    -- should be pushed.
     min_flow = 0.2,
 
     -- Longest the pass may run without a break, in seconds. 0 runs it in one piece.
