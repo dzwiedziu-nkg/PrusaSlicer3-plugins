@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.wipe-tower-cancel",
+	"name": "Cancellable wipe tower",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Lists the wipe tower among the objects the printer can cancel mid print",
+	"repo": "https://github.com/dzwiedziu-nkg/wipe-tower-cancel-plugin",
+	"required_apis": {
+		"slicing.object_labels": "1.0.0"
+	}
+}
