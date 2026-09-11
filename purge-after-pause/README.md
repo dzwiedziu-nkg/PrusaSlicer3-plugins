@@ -46,6 +46,38 @@ purge is inside the part and at the layer's own Z, so nothing stands proud for t
 nozzle to hit — and what it costs is not really waste, since the filament stays in the object
 as extra material.
 
+![The purge in the preview](doc/purge_after_pause.png)
+
+The preview at the pause layer of the test part — a compartment box, paused at Z = 10.2 so that
+bearings can be dropped into the slots. The dark patches sitting in the cells of the sparse
+infill grid are the purge. They are inside the part, they are at the layer's own height, and
+nothing of them will ever be seen once the box is closed over.
+
+## On the printer
+
+This is what it is for, and it is the largest thing the plugin buys:
+
+| | |
+|---|---|
+| ![The wall after a pause](doc/wall_with_no_gaps1.jpeg) | ![The wall from the corner](doc/wall_with_no_gaps2.jpeg) |
+
+A 19.5 mm square with a pause halfway up. **The wall is continuous through the pause — no gap,
+no starved band.** Before the plugin, a pause on an object this small reliably left one: the
+external perimeter is reached seconds after the resume, and the melt had not recovered by then.
+
+What is left is the faint horizontal mark you can see on the right-hand photo, a slight ridge
+where the layer restarted — a Benchy hull line, if you like. It is a cosmetic seam rather than
+a hole, and on a small part it is a very large improvement on what was there before.
+
+### What happens after the pause
+
+[![The nozzle returning from a pause onto the purge patch](https://img.youtube.com/vi/wEw-s56fzEk/hqdefault.jpg)](https://www.youtube.com/shorts/wEw-s56fzEk)
+
+*[Watch on YouTube](https://www.youtube.com/shorts/wEw-s56fzEk)* — the nozzle comes back from
+the pause, lands on the purge patch inside the part, drives out what was sitting in the melt,
+and only then goes to the perimeter. The drip that would otherwise have welded itself to the
+wall lands between infill lines instead.
+
 ## Settings
 
 `settings.lua` next to the Lua source. Edit and slice again; no restart, no rescan. It is read
