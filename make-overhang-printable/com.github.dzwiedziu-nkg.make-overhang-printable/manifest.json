@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.make-overhang-printable",
+	"name": "Make overhang printable",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Carries an overhang on a cone of new material built up from underneath, so it is printed at a slope the printer can hold instead of onto air. OrcaSlicer's make_overhang_printable.",
+	"required_apis": {"slicing.slice_planner": "1.1.0"},
+	"category": "slicing",
+	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
+}

@@ -130,6 +130,17 @@ defaults apply.
 | `max_width` | `2.0` | The most material the chamfer may cut away, in mm, measured as the largest disc that fits inside it. The safety catch — see above. `0` means no limit. |
 | `min_z` | `0.0` | Leave everything below this height alone. Worth setting when the bottom of the part has to come out dimensionally right. |
 
+## The other way round
+
+Taking the overhang off is one of two answers; the other is to put material under it, which is
+[`make-overhang-printable`](../make-overhang-printable/) — OrcaSlicer's feature of that name.
+That one loses nothing of the model and gains a cone you may have to trim; this one loses a
+little of the model and gains nothing to trim. On a small ledge this is usually the better trade,
+which is what this plugin is for.
+
+**They cannot both be installed.** Both are `slicing.slice_planner` and the slicer loads one
+plugin of each type, so symlink one or the other.
+
 ## The hook it needs
 
 `slicing.slice_planner`, which is not "chamfer overhangs" but:

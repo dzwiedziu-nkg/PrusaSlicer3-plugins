@@ -19,6 +19,46 @@ OrcaSlicer ships this as `alternate_extra_wall`. **PrusaSlicer has no equivalent
 count is fixed for the object, and the only per-layer variation it offers is the automatic
 extra perimeter on overhangs.
 
+## Side by side with OrcaSlicer
+
+The same part cut open in both slicers — this plugin on the left, OrcaSlicer's own
+`alternate_extra_wall` on the right:
+
+| this plugin, on the fork | OrcaSlicer |
+|---|---|
+| ![Alternating extra wall in PrusaSlicer](doc/alternate-extra-wall.png) | ![Alternating extra wall in OrcaSlicer](doc/orca_alternate_extra_wall.png) |
+
+Yellow is inner wall, orange is the external one, dark red the sparse infill. The thing to look
+for is the same in both: the infill runs the full area and passes **under** the extra wall of
+the layer above, rather than stopping against one continuous face that repeats all the way up
+the part.
+
+The purple in the left-hand shot is the **bottom solid shell**, seen down through the infill
+cells — not solid infill between the walls. Measured over everything between the bottom and top
+shells, that part carries **0.00 mm³ of solid infill**; 2 259 mm³ of sparse infill, 2 468 mm³ of
+wall and nothing else. Worth saying because an earlier version of this plugin did put solid
+infill in that band, and that is the one thing a reader comparing these two pictures should
+check.
+
+### The infill patterns are not the same, and that is worth knowing
+
+The two pictures were not sliced with the same infill. Straight from the two files:
+
+| | pattern | density | walls |
+|---|---|---|---|
+| this plugin | `grid` | 15 % | 2 |
+| OrcaSlicer | `crosshatch` | 15 % | 2 |
+
+**Cross Hatch is OrcaSlicer's default sparse infill and PrusaSlicer has no equivalent.** It is a
+pattern that shifts direction as it climbs rather than stacking the same lattice, so how much an
+alternating wall buys on top of it is a different question from how much it buys on top of a
+grid. Take the comparison as showing that the two slicers do the same thing to the *wall*, not
+as a like-for-like on the infill.
+
+Cross Hatch is a candidate for a plugin of its own here — it is a fill pattern, so it needs
+`slicing.fill_planner`, the hook `radial-bridge` already uses. **When that plugin exists, this
+page should be re-sliced against it and this section brought up to date.**
+
 ## What it costs
 
 Sliced from OrcaSlicer's own test project, the same part with and without the plugin:
