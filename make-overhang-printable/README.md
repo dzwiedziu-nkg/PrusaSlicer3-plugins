@@ -2,8 +2,13 @@
 
 A `slicing.slice_planner` plugin for PrusaSlicer 3.x. It **carries an overhang on a cone of new
 material built up from underneath**, so the printer lays it on a slope it can hold instead of
-onto air. This is OrcaSlicer's `make_overhang_printable`, which **PrusaSlicer has no equivalent
-of**.
+onto air.
+
+> **This is OrcaSlicer's algorithm.** The feature is theirs — `make_overhang_printable`, with
+> `make_overhang_printable_angle` — and this plugin is a reimplementation of it for PrusaSlicer,
+> which has no equivalent. On the same part in the same place the two produce the same cone to
+> within 0.003 mm a layer; the measurements are below. Credit for the idea and for the default
+> angle belongs to OrcaSlicer.
 
 ## The problem
 
@@ -30,6 +35,35 @@ vertical and the number is the most horizontal slope printable without support.*
 side**, and its default of 55 is this plugin's 35. That is not an assumption — read off
 OrcaSlicer's own output for the test part, the cone advances **0.2855 mm per 0.2 mm layer**, and
 `0.2 / tan(35°)` is 0.2856.
+
+## In the preview
+
+The test part is a cube tipped about 5° off vertical, so it stands on one edge and its whole
+underside is a near-flat overhang:
+
+![The test part on the bed](doc/figure.png)
+
+Sliced without the plugin and with it, seen from underneath:
+
+| without the plugin | with the plugin |
+|---|---|
+| ![Underside without the plugin](doc/without_plugin.png) | ![Underside with the plugin](doc/slice_with_plugin.png) |
+
+On the left the underside is **blue** — bridge infill in the darker shade, overhang perimeter in
+the brighter one. Every one of those beads is laid onto air. On the right there is no blue at
+all: the underside is ordinary solid infill in purple, wall in orange and yellow, and along the
+edges you can see the cone climbing as a run of stepped contours.
+
+That is not just how it looks. Measured over the bottom 3 mm of the part:
+
+| | bridge infill | overhang perimeter |
+|---|---|---|
+| without the plugin | 102.8 mm³ | 30.8 mm³ |
+| with the plugin | **0.0 mm³** | **0.0 mm³** |
+
+The 227.4 mm³ of bridge infill left in the whole-part figures further down is all above that,
+over the sparse infill, and is not something this plugin has any business touching — it is
+identical with and without.
 
 ## Measured, against OrcaSlicer's own output
 

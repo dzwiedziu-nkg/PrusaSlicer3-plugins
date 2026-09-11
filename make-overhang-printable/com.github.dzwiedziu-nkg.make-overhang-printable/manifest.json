@@ -5,7 +5,7 @@
 	"min_slicer_version": "3.0.0",
 	"version": "0.1.0",
 	"author": "dzwiedziu-nkg",
-	"description": "Carries an overhang on a cone of new material built up from underneath, so it is printed at a slope the printer can hold instead of onto air. OrcaSlicer's make_overhang_printable.",
+	"description": "Carries an overhang on a cone of new material built up from underneath, so it is printed at a slope the printer can hold instead of onto air. A reimplementation of OrcaSlicer's make_overhang_printable for PrusaSlicer.",
 	"required_apis": {"slicing.slice_planner": "1.1.0"},
 	"category": "slicing",
 	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",

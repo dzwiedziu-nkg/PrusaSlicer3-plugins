@@ -26,7 +26,7 @@ is bit for bit the stock output — that is checked for every one of them.
 | [`alternate-extra-wall/`](alternate-extra-wall/) | `slicing.perimeter_planner` | Adds one wall on every other layer, so the infill is wedged between walls instead of meeting the same seam all the way up. |
 | [`purge-after-pause/`](purge-after-pause/) | `slicing.resume_planner` | Purges into the room the layer's own infill leaves, first thing after a pause or a colour change, so the wall comes through the pause without a gap and the drip lands inside the part. |
 | [`overhang-chamfer/`](overhang-chamfer/) | `slicing.slice_planner` | Chamfers small 90° overhangs away by letting each layer's outline reach only so far past the layer below, so the printer never lays a bead onto air where a chamfer would have done. |
-| [`make-overhang-printable/`](make-overhang-printable/) | `slicing.slice_planner` | Carries an overhang on a cone of new material built up from underneath, so it is printed on a slope instead of onto air. OrcaSlicer's `make_overhang_printable`. |
+| [`make-overhang-printable/`](make-overhang-printable/) | `slicing.slice_planner` | Carries an overhang on a cone of new material built up from underneath, so it is printed on a slope instead of onto air. **A reimplementation of OrcaSlicer's `make_overhang_printable`.** |
 | [`wipe-tower-cancel/`](wipe-tower-cancel/) | `slicing.object_labels` | Puts the wipe tower on the list of objects the printer can cancel mid-print. |
 
 **Two of these share a hook.** `overhang-chamfer` and `make-overhang-printable` are both
