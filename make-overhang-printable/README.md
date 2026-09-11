@@ -33,40 +33,43 @@ OrcaSlicer's own output for the test part, the cone advances **0.2855 mm per 0.2
 
 ## Measured, against OrcaSlicer's own output
 
-The same part: a wedge whose underside runs at about 5° from horizontal — nearly flat, and the
-worst case there is.
+The same part and the same placement: a wedge whose underside runs at about 5° from
+horizontal — nearly flat, and the worst case there is.
 
 | | no plugin | this plugin | OrcaSlicer |
 |---|---|---|---|
-| layers whose outline exceeds the bound | **11** | **0** | 0 |
-| worst single step | 2.360 mm | 0.311 mm | 0.511 mm |
-| overhang perimeter | 48.7 mm³ | **0.00 mm³** | — |
-| bridge infill | 384.7 mm³ | **227.4 mm³** (−41 %) | — |
-| material | 5.13 cm³ | 5.26 cm³ (+2.5 %) | 5.29 cm³ |
-| estimated time | 21m 17s | 21m 37s (+20 s) | 22m 11s |
+| layers whose outline exceeds the bound | **7** | **0** | **0** |
+| worst single step | 2.511 mm | **0.511 mm** | **0.511 mm** |
+| overhang perimeter | 30.8 mm³ | **0.00 mm³** | — |
+| bridge infill | 330.2 mm³ | **227.4 mm³** (−31 %) | — |
+| material | 5.09 cm³ | 5.14 cm³ (+1.0 %) | 5.29 cm³ |
+| estimated time | 20m 59s | 21m 00s (+1 s) | 22m 11s |
 
-**Every 90° overhang is gone** — not reduced, zero. The "worst single step" that remains is not
-an overhang at all: the first layer is extruded 0.50 mm wide against 0.45 mm above it, so its
-centre line sits 0.025 mm further in, and 0.2856 + 0.025 = 0.311 is exactly what is measured.
-OrcaSlicer's own output has the same artefact, larger.
+**Every 90° overhang is gone** — not reduced, zero. The 0.511 mm step that remains is not an
+overhang at all and is identical in OrcaSlicer's output: the first layer is extruded 0.50 mm
+wide against 0.45 mm above it, so its centre line sits further in than the outline does.
 
 OrcaSlicer does not label overhang walls with their own G-code type, so those two rows have no
-Orca column; and its sparse infill is `crosshatch` against our `grid`, so **the material and time
-columns are not like-for-like across slicers.** The +2.5 % and +20 s are ours against ours, and
-those are the honest numbers.
+Orca column; and its sparse infill is `crosshatch` against our `grid`, so **the material and
+time columns are not like-for-like across slicers.** The +1.0 % and +1 s are ours against ours,
+and those are the honest numbers.
 
-### Where the two cones differ
+### The cone is the same cone OrcaSlicer builds
 
-Both slope at 0.2855 mm per layer. They are anchored differently:
+Not approximately — layer for layer, on the same part in the same place:
 
-- **This plugin builds the minimal cone.** It descends from the model's own widest outline and
-  never goes outside it anywhere.
-- **OrcaSlicer's is bigger.** It reaches its full width at Z = 1.6 while the model does not reach
-  full width until Z = 2.4, so between those heights it stands up to **1.2 mm** further out than
-  the minimal cone, and **0.07 mm** further out than the model is at its very widest.
+| Z | this plugin | OrcaSlicer |
+|---|---|---|
+| 0.20 | 113.918 | 113.915 |
+| 0.60 | 113.122 | 113.119 |
+| 1.00 | 112.551 | 112.548 |
+| 1.60 | 111.694 | 111.691 |
+| 2.40 | 111.764 | 111.761 |
 
-That is the difference between doing this on the slice outlines and doing it, as OrcaSlicer does,
-by moving mesh vertices before the slicing starts. Neither is wrong; ours costs less material.
+**0.003 mm apart at every layer**, which is placement rounding and not the cone. Both slope at
+0.2855 mm per 0.2 mm layer, both stop in the same place, both leave the same first-layer
+artefact. One does it by moving mesh vertices before slicing and the other by clipping slice
+outlines during it, and the answers land on top of each other.
 
 ## What it costs
 
@@ -113,8 +116,9 @@ The `"fill"` remedy is this plugin; `"clip"` is the chamfer. The same mechanism 
 that makes only the first few millimetres self-supporting, one that tightens the angle towards
 the top of a tall part, and one that leaves the model alone below a given Z.
 
-Requires the fork: <https://github.com/dzwiedziu-nkg/PrusaSlicer>, with the hook at API 1.1.0 or
-later.
+Requires the fork: <https://github.com/dzwiedziu-nkg/PrusaSlicer> at `97929f43c9` or later,
+with the hook at API 1.1.0. Earlier commits split the first layer in two wherever
+`elefant_foot_compensation` is set.
 
 ## Known difference from OrcaSlicer
 
