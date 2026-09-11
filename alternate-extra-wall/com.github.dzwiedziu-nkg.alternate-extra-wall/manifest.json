@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.alternate-extra-wall",
+	"name": "Alternate extra wall",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Adds one wall on every other layer, so the infill's anchor points alternate between two radii and the infill ends up wedged vertically between walls instead of always meeting the same seam.",
+	"required_apis": {"slicing.perimeter_planner": "1.0.0"},
+	"category": "slicing",
+	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
+}

@@ -1,0 +1,79 @@
+# Alternate extra wall — a PrusaSlicer slicing plugin
+
+A `slicing.perimeter_planner` plugin for PrusaSlicer 3.x. It adds **one wall on every other
+layer**, so the infill ends up wedged vertically between walls instead of meeting the same
+face all the way up the part.
+
+## The problem
+
+A wall count is one number for the whole object. Every layer's innermost wall therefore sits at
+the same radius, and the infill meets it along the same line from the bed to the top. That line
+is a seam running the height of the part, and it is where the part comes apart — the infill is
+butted against a continuous face rather than keyed into anything.
+
+Give every other layer one more wall and the innermost wall alternates between two radii. The
+infill on one layer now sits slightly inboard of the infill on the next, with wall between
+them: it is keyed in vertically rather than stacked against a flat face.
+
+OrcaSlicer ships this as `alternate_extra_wall`. **PrusaSlicer has no equivalent** — its wall
+count is fixed for the object, and the only per-layer variation it offers is the automatic
+extra perimeter on overhangs.
+
+## What it costs
+
+Sliced from OrcaSlicer's own test project, the same part with and without the plugin:
+
+| | without | with |
+|---|---|---|
+| inner wall moves, alternating layers | 4 | **8** |
+| inner wall moves, other layers | 4 | 4 |
+| external perimeter | unchanged | unchanged |
+| material | 5 443 mm³ | **6 395 mm³** (+17.5 %) |
+| estimated time | 19m57s | **20m03s** (+6 s) |
+
+The material goes up a lot and the time barely moves, which is the shape of the trade: the
+extra wall displaces sparse infill, so the head travels much the same distance but lays solid
+wall where it used to lay a 15 % lattice.
+
+**It buys strength and nothing else.** On a part that is not loaded it is 17 % of your filament
+spent on nothing. On a thin-walled part there may be no room for the extra wall to go, and the
+plugin will simply find the slicer has given it a count it cannot improve on.
+
+## Settings
+
+`settings.lua` next to the Lua source. Edit and slice again; no restart, no rescan. It is read
+inside a `pcall`, so **a syntax error in it is reported nowhere** — the file is ignored and the
+defaults apply.
+
+| setting | default | what it does |
+|---|---|---|
+| `extra` | `1` | How many walls to add. One is what the effect is named after and what it needs: the point is that the innermost wall alternates between two radii, and it does that at one. `0` turns the plugin off. |
+| `every` | `2` | Add them on every Nth layer. Below 2 the plugin does nothing — "every layer" is just a higher wall count and belongs in the print settings. |
+| `phase` | `1` | Which layer of each cycle gets the extra wall, as `layer_id % every`. Only decides where the alternation starts. |
+| `skip_first_layers` | `1` | Leave this many layers at the bottom alone. The first layers are about adhesion, not strength, and changing the count there moves the seam on the face that sits on the bed. |
+
+## The hook it needs
+
+`slicing.perimeter_planner`, which is not "alternate extra wall" but:
+
+> given a layer and the region about to have its perimeters generated, decide how many there
+> will be.
+
+The same mechanism serves more wall through a band that will be tapped or threaded, more wall
+near the top and bottom faces where the load goes, fewer wall in a tall thin feature that is
+only there for looks, and more wall where a support is going to be prised off.
+
+Requires the fork: <https://github.com/dzwiedziu-nkg/PrusaSlicer>.
+
+## Running it
+
+Symlink the bundle into the slicer's datadir, by the name in `manifest.json`:
+
+```bash
+ln -sfn "$PWD/com.github.dzwiedziu-nkg.alternate-extra-wall" \
+    ~/.config/PrusaSlicer3-dev/lua/
+```
+
+## License
+
+AGPL-3.0-only. See `LICENSE`.
