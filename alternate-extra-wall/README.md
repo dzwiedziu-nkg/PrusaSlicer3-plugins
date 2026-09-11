@@ -28,12 +28,24 @@ Sliced from OrcaSlicer's own test project, the same part with and without the pl
 | inner wall moves, alternating layers | 4 | **8** |
 | inner wall moves, other layers | 4 | 4 |
 | external perimeter | unchanged | unchanged |
-| material | 5 443 mm³ | **6 395 mm³** (+17.5 %) |
-| estimated time | 19m57s | **20m03s** (+6 s) |
+| solid infill in the middle layers | none | **none** |
+| material | 5 443 mm³ | **6 268 mm³** (+15.2 %) |
+| estimated time | 19m57s | **19m59s** (+2 s) |
 
 The material goes up a lot and the time barely moves, which is the shape of the trade: the
 extra wall displaces sparse infill, so the head travels much the same distance but lays solid
 wall where it used to lay a 15 % lattice.
+
+**The row that says "none" took an engine change to get right.** The slicer's vertical shell
+check reads the area left inside the innermost wall and treats everything outside it as shell
+that the layers above and below have to back up. An extra wall shrinks that area on its own
+layer, so the first version of this plugin had the slicer lay solid infill in that band on
+every layer that *did not* get the wall — 9 mm³ a layer of it. That is worse than doing
+nothing: the whole point of alternating the wall is that the infill is keyed in vertically
+rather than meeting one continuous face, and filling the band solid welds that face back
+together. The fix measures the shell as if the plugin's walls were not there, so the sparse
+infill now runs the full area and out under the next layer's extra wall, which is what
+OrcaSlicer does. It needs the fork at `dc956467ef` or later.
 
 **It buys strength and nothing else.** On a part that is not loaded it is 17 % of your filament
 spent on nothing. On a thin-walled part there may be no room for the extra wall to go, and the
