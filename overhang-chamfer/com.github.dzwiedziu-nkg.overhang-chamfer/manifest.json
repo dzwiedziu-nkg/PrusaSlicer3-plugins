@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.overhang-chamfer",
+	"name": "Overhang chamfer",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Chamfers small 90 degree overhangs away by letting each layer's outline reach only so far past the layer below, so the printer never lays a bead onto air where a chamfer would have done.",
+	"required_apis": {"slicing.slice_planner": "1.0.0"},
+	"category": "slicing",
+	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
+}
