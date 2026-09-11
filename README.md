@@ -23,6 +23,7 @@ is bit for bit the stock output — that is checked for every one of them.
 | [`short-extrusion/`](short-extrusion/) | `slicing.extrusion_filter` | Drops extrusions too short to be worth the travel that reaches them. |
 | [`radial-bridge/`](radial-bridge/) | `slicing.fill_planner` | Bridges an annular gap with spokes from the inner island to the surrounding wall, instead of parallel lines across the whole opening. |
 | [`support-ironing/`](support-ironing/) | `slicing.pass_planner` | Irons the top of a support interface, so the underside of the overhang cast against it comes out smooth. |
+| [`purge-after-pause/`](purge-after-pause/) | `slicing.resume_planner` | Purges into the room the layer's own infill leaves, first thing after a pause or a colour change, so the drip lands inside the part instead of on a wall. |
 | [`wipe-tower-cancel/`](wipe-tower-cancel/) | `slicing.object_labels` | Puts the wipe tower on the list of objects the printer can cancel mid-print. |
 
 ## Installing one
