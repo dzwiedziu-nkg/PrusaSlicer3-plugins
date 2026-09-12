@@ -31,6 +31,19 @@ the pattern about 45° and the pattern about 135° are the same lattice, so the 
 invisible. That is `Fill3DHoneycomb`'s `curveType`, switched once per half period instead of
 once per layer.
 
+## In the preview
+
+![Cross Hatch infill cut open](doc/cross-hatch.png)
+
+The pattern is easier to see than to describe. The dark red runs are the **straight phase**:
+several layers at the same angle, stacked into continuous walls. Between and across them are the
+**zigzag layers**, the trapezoidal shapes that tie one set of walls to the next and carry the
+pattern round to the perpendicular direction.
+
+That is the whole idea in one picture — walls where a wall is useful, and a break in them before
+any wall runs the height of the part. `grid` would show two sets of walls going all the way up
+with nothing tying them; `rectilinear` would show no walls at all.
+
 ## Measured, against OrcaSlicer's own file
 
 The same part, layer by layer. "Straight" and "zigzag" here are the share of extrusion length
