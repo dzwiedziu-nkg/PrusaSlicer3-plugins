@@ -58,10 +58,10 @@ That is not just how it looks. Measured over the bottom 3 mm of the part:
 
 | | bridge infill | overhang perimeter |
 |---|---|---|
-| without the plugin | 102.8 mm³ | 30.8 mm³ |
+| without the plugin | 91.0 mm³ | 30.8 mm³ |
 | with the plugin | **0.0 mm³** | **0.0 mm³** |
 
-The 227.4 mm³ of bridge infill left in the whole-part figures further down is all above that,
+The 197.1 mm³ of bridge infill left in the whole-part figures further down is all above that,
 over the sparse infill, and is not something this plugin has any business touching — it is
 identical with and without.
 
@@ -75,7 +75,7 @@ horizontal — nearly flat, and the worst case there is.
 | layers whose outline exceeds the bound | **7** | **0** | **0** |
 | worst single step | 2.511 mm | **0.511 mm** | **0.511 mm** |
 | overhang perimeter | 30.8 mm³ | **0.00 mm³** | — |
-| bridge infill | 330.2 mm³ | **227.4 mm³** (−31 %) | — |
+| bridge infill | 288.1 mm³ | **197.1 mm³** (−32 %) | — |
 | material | 5.09 cm³ | 5.14 cm³ (+1.0 %) | 5.29 cm³ |
 | estimated time | 20m 59s | 21m 00s (+1 s) | 22m 11s |
 
@@ -104,6 +104,12 @@ Not approximately — layer for layer, on the same part in the same place:
 0.2855 mm per 0.2 mm layer, both stop in the same place, both leave the same first-layer
 artefact. One does it by moving mesh vertices before slicing and the other by clipping slice
 outlines during it, and the answers land on top of each other.
+
+> **A note on these figures.** They were re-measured after a bug in the measuring script: it
+> summed every `E > 0`, which counts **deretractions** — the filament pushed back after a travel
+> — as material on the part. That inflates any pattern with more travel than the stock one, so
+> the numbers below are lower than the ones this page carried at first. The conclusions did not
+> move; the arithmetic did.
 
 ## What it costs
 

@@ -21,6 +21,7 @@ is bit for bit the stock output — that is checked for every one of them.
 | [`island-order/`](island-order/) | `slicing.island_order` | Chooses which of a layer's disjoint islands to print next, so a tall thin one is not returned to while it is still soft. |
 | [`sequential-islands/`](sequential-islands/) | `slicing.island_sequence` | Finishes one upper part of an object to the top before starting the other, once they have split from a common base. Experimental. |
 | [`short-extrusion/`](short-extrusion/) | `slicing.extrusion_filter` | Drops extrusions too short to be worth the travel that reaches them. |
+| [`bridge-density/`](bridge-density/) | `slicing.fill_planner` | Spaces bridge lines by the bead the nozzle actually lays rather than by the flattened width the slicer assumes, so adjacent strands touch instead of hanging alone. |
 | [`cross-hatch/`](cross-hatch/) | `slicing.fill_planner` | 3D Honeycomb with the straight phase stretched over several layers, so those layers fuse into a wall before the zigzag carries the pattern round to the perpendicular direction. **A reimplementation of OrcaSlicer's Cross Hatch.** |
 | [`gradient-infill/`](gradient-infill/) | `slicing.fill_planner` | Packs the sparse infill closer near the walls and lets it open out towards the middle, so the material goes where the part is stiffest. |
 | [`radial-bridge/`](radial-bridge/) | `slicing.fill_planner` | Bridges an annular gap with spokes from the inner island to the surrounding wall, instead of parallel lines across the whole opening. |

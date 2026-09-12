@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.bridge-density",
+	"name": "Bridge density",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Spaces bridge lines by the bead the nozzle actually lays in mid-air rather than by the flattened width the slicer assumes, so adjacent strands touch and hold each other up instead of hanging alone.",
+	"required_apis": {"slicing.fill_planner": "1.2.0"},
+	"category": "slicing",
+	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
+}

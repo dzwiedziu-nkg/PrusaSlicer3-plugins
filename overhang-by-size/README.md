@@ -40,10 +40,10 @@ above — sliced four ways:
 
 | | support | overhang perimeter | bridge infill | material | time |
 |---|---|---|---|---|---|
-| no plugin | 2286.8 mm³ | 56.8 mm³ | 457.3 mm³ | 6.64 cm³ | 19m 45s |
-| `overhang-chamfer` alone | 2307.6 | 23.3 | 392.3 | 6.61 | 19m 35s |
-| `make-overhang-printable` alone | 2198.5 | **0.00** | 296.0 | 6.64 | 21m 05s |
-| **`overhang-by-size`** | 2195.0 | **0.00** | 296.0 | **6.58** | 21m 52s |
+| no plugin | 2174.0 mm³ | 51.7 mm³ | 445.5 mm³ | 6.64 cm³ | 19m 45s |
+| `overhang-chamfer` alone | 2196.5 | 21.6 | 387.3 | 6.61 | 19m 35s |
+| `make-overhang-printable` alone | 2082.3 | **0.00** | 294.3 | 6.64 | 21m 05s |
+| **`overhang-by-size`** | 2085.5 | **0.00** | 294.3 | **6.58** | 21m 52s |
 
 **Every 90° overhang gone, for less material than either single-remedy plugin** — because the
 small ledges are cut rather than carried, and cutting a 1 mm ledge is cheaper than building a
@@ -62,6 +62,12 @@ Layer by layer, the two remedies land where they should:
 The chamfer leaves the 4 mm ledge alone because it is wider than `cut_below`; `overhang-by-size`
 picks it up on the way back down and builds the cone. On this part the slicer reports
 `clipped 10 and widened 21 of the 80 layers`.
+
+> **A note on these figures.** They were re-measured after a bug in the measuring script: it
+> summed every `E > 0`, which counts **deretractions** — the filament pushed back after a travel
+> — as material on the part. That inflates any pattern with more travel than the stock one, so
+> the numbers below are lower than the ones this page carried at first. The conclusions did not
+> move; the arithmetic did.
 
 ## Settings
 

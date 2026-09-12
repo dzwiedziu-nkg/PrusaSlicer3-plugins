@@ -68,13 +68,20 @@ of chamfering it.
 A tower of three 1 mm ledges — every overhang on it fits inside the default `max_width` — with
 supports on and `support_material_threshold = 35`:
 
-| | no plugin | 35° | 40° | **46°** |
-|---|---|---|---|---|
-| overhang perimeter | 48.6 mm³ | **0.0** | **0.0** | **0.0** |
-| bridge infill | 240.4 mm³ | 171.2 | 171.2 | 171.2 |
-| support material | 1006.6 mm³ | 996.8 | 370.1 | **0.0** |
-| material | 4.23 cm³ | 4.20 | 3.39 | **3.28** (−22 %) |
-| estimated time | 15m 38s | 14m 50s | 13m 45s | **13m 5s** (−16 %) |
+| | no plugin | 35° | **46°** |
+|---|---|---|---|
+| overhang perimeter | 45.2 mm³ | **0.0** | **0.0** |
+| bridge infill | 228.6 mm³ | 169.5 | 169.5 |
+| support material | 907.2 mm³ | 890.8 | **0.0** |
+| material | 4.23 cm³ | 4.20 | **3.28** (−22 %) |
+| estimated time | 15m 38s | 14m 50s | **13m 5s** (−16 %) |
+
+> **A note on these figures.** They were re-measured after a bug in the measuring script: it
+> summed every `E > 0`, which counts **deretractions** — the filament pushed back after a travel
+> — as material on the part. That inflates any pattern with more travel than the stock one, so
+> the numbers below are lower than the ones this page carried at first. The conclusions did not
+> move; the arithmetic did.
+
 
 **Every 90° overhang is gone at the default angle** — not reduced, zero. What did *not* happen
 at 35° is the support going away, and that is worth knowing about before you set the angle.
@@ -95,7 +102,7 @@ Which gives the angle that clears it:
 angle ≥ atan( tan(support_material_threshold + 1) × √2 )
 ```
 
-= **45.8° for a threshold of 35**. The prediction lands exactly: support is 389 mm³ at 45° and
+= **45.8° for a threshold of 35**. The prediction lands exactly: support is nonzero at 45° and
 **0.0 mm³ at 46°**, and what is left at 40–45° is four thin columns at the corners of the part,
 about 18 extrusions a layer.
 
@@ -108,9 +115,9 @@ The same tower with 1 mm, 2 mm and **4 mm** ledges, at the default 35° and `max
 
 | | no plugin | with the plugin |
 |---|---|---|
-| overhang perimeter | 56.8 mm³ | **23.3 mm³** |
+| overhang perimeter | 51.7 mm³ | **21.6 mm³** |
 
-The 23.3 mm³ left is the 4 mm ledge, untouched — it does not fit under `max_width`, so it is
+The 21.6 mm³ left is the 4 mm ledge, untouched — it does not fit under `max_width`, so it is
 left whole for the support generator, exactly as intended. The 1 mm and 2 mm ledges went to
 zero. Measured layer by layer, the outline steps out 0.286 mm per 0.2 mm layer over the 2 mm
 ledge and takes 8 layers to arrive, which is `layer_height / tan(35°)` to three decimals.
