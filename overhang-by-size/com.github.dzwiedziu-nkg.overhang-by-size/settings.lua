@@ -14,7 +14,7 @@ return {
     -- Note that 35 stops the printer laying beads onto air but does not stop the support
     -- generator, which wants a margin: `atan(tan(threshold + 1) * sqrt(2))`, or 46 degrees for
     -- a threshold of 35. See the overhang-chamfer README for why.
-    angle = 0,
+    angle = 35,
 
     -- Overhangs up to this wide, in mm, are cut off. Wider ones are carried on a cone.
     --

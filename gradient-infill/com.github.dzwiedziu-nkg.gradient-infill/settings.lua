@@ -9,7 +9,7 @@ return {
     --
     -- Inside this band the lines are packed `edge` times closer than the setting asks for;
     -- past `taper` beyond it they are back to `core`. 0 turns the plugin off.
-    band = 0,
+    band = 4.0,
 
     -- How much closer the lines run inside the band, as a multiple of the density.
     --

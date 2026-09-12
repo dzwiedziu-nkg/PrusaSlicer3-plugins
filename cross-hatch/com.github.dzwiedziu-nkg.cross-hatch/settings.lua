@@ -17,7 +17,7 @@ return {
     --
     -- Shorter means the infill changes direction more often: less like a wall, more like a
     -- lattice. Longer means stiffer runs and taller continuous faces.
-    half_period = 0,
+    half_period = 2.7,
 
     -- How much of each half period is spent turning rather than holding, 0 to 1.
     --
