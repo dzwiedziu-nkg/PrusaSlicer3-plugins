@@ -66,6 +66,35 @@ a controlled setting, and it is *sparser* than stock at the outer edge:
 The spacing there is strictly proportional to radius, because the spoke count is matched to the
 middle radius; `density` scales the whole profile rather than levelling it.
 
+## A part to try it on
+
+`doc/bridge_test.scad.py` writes an 80 × 40 × 8 mm block with three tunnels running right
+through it — **10, 20 and 30 mm wide**, 5 mm walls between them, and a 2 mm roof. Print it,
+turn it over, and look into the tunnels: the underside of the bridge is the first layer of the
+roof and nothing hides it.
+
+```bash
+python3 doc/bridge_test.scad.py bridge_test.stl
+```
+
+Slice it three times — without the plugin, with `overlap = 0`, with `overlap = 0.10` — and
+compare the three undersides. What to look for, in order of how obvious it is:
+
+1. **Daylight between the strands.** Hold it up to a light. Stock leaves a 0.05 mm slot beside
+   every strand; at `overlap = 0` they meet.
+2. **Sag.** A strand touching its neighbours is held by them. The 30 mm tunnel shows it first.
+3. **Whether it went too far.** Past `overlap ≈ 0.25` there is more plastic than room and the
+   strands lift into the path of the nozzle. The 10 mm tunnel shows that first, because the
+   strands there are stiff enough not to sag out of the way.
+
+Measured on that part at a 0.4 nozzle:
+
+| | line spacing | strands | bridge line laid | time |
+|---|---|---|---|---|
+| stock | 0.452 mm | gap 0.050 mm | 12 686 mm | 20m 01s |
+| `overlap = 0` | 0.400 mm | **touching** | 14 513 mm | 20m 34s |
+| `overlap = 0.10` | 0.360 mm | 10 % overlap | 16 133 mm | — |
+
 ## Settings
 
 `settings.lua` next to the Lua source. Edit and slice again; no restart, no rescan. It is read
