@@ -50,26 +50,41 @@ A 20 × 20 × 16 mm block at 15 % `rectilinear`, with and without the plugin:
 | infill path | 152.3 mm/layer | 126.5 mm/layer |
 | infill filament | 893.0 mm³ | **740.0 mm³** (−17 %) |
 
+(20 × 20 × 16 mm block; the angle comparison below is from a different, taller part.)
+
 **The lattice is the same lattice** — same spacing, same count. The 17 % is not lower density,
 it is the *links*: the stock filler joins its lines with extruded arcs along the boundary, and
 a planner's paths are separate lines with a travel between them. Less material and more travel,
 which is the trade this hook makes on every plugin that uses it.
 
-Line angle layer by layer, against OrcaSlicer's own file:
+### Against OrcaSlicer, on the same part
 
-| Z | ours | OrcaSlicer |
+The runs where the angle is held — the part that matters — line up:
+
+| | this plugin | OrcaSlicer |
 |---|---|---|
-| 1.00 – 2.20 | 45° | 45° |
-| 2.40 | 52° | turning |
-| 3.00 | 97° | turning |
-| 3.40 | 127° | turning |
-| 3.60 – 5.00 | 135° | 135° |
-| 6.40 – 7.60 | 45° | 45° |
-| 9.00 – 10.40 | 135° | 135° |
+| 45° | Z 1.00 – **2.20** | Z 1.20 – **2.20** |
+| 135° | Z 3.60 – **5.00** | Z 3.60 – **5.00** |
+| 45° | Z 6.20 – **7.60** | Z 6.40 – **7.60** |
+| 135° | Z 9.00 – **10.40** | Z 9.00 – **10.40** |
+| 45° | Z 11.60 – **13.00** | Z 11.80 – **13.00** |
+| 135° | Z 14.40 – **15.80** | Z 14.40 – **15.80** |
+| 135° | Z 19.80 – **21.20** | Z 20.00 – **21.20** |
 
-17 of the 18 layers checked agree. The one that does not is Z = 6.20, where OrcaSlicer is still
-turning and this has arrived — their half period alternates between 13 and 14 layers where this
-uses a constant 2.7 mm, so the two drift by a layer at the boundary and re-synchronise.
+**Every run ends on the same layer**, and the period and phase are the same all the way up a
+25 mm part. The starts differ by a layer or two because the turn takes slightly longer there
+than here.
+
+### The turn itself is not the same, and that is deliberate
+
+In a transition layer OrcaSlicer's lines are **curved** — one layer carries a spread of
+directions, which is why no single angle dominates it. This plugin rotates the whole family of
+straight lines instead, so a transition layer has one intermediate angle: 52°, 67°, 82°, 97°,
+112° and then 135°.
+
+The effect is the same — consecutive layers cross, so the infill is keyed vertically instead of
+fusing into a wall — and straight lines are what a fill planner can lay without a geometry
+library. If the curves turn out to matter, they are the obvious next thing.
 
 ## Settings
 
