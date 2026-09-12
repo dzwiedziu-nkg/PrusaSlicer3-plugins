@@ -19,12 +19,16 @@ return {
     -- lattice. Longer means stiffer runs and taller continuous faces.
     half_period = 2.7,
 
-    -- How much of each half period is spent turning rather than holding, 0 to 1.
+    -- How much of each half period is the zigzag rather than the straight run, 0 to 1.
     --
-    -- 0 turns the direction over in one layer, which is what `rectilinear` does and is the
-    -- thing Cross Hatch exists to avoid: consecutive layers crossing at 90 degrees touch each
-    -- other at points rather than along lines. OrcaSlicer spends about six layers of the
-    -- thirteen in a half period turning, which is the 0.45 here.
+    -- The pattern is a stack of truncated octahedra, the same tessellation PrusaSlicer ships as
+    -- `3dhoneycomb`. Where the zigzag amplitude falls to zero the lines come out straight, and
+    -- straight layers stacked on each other fuse into a wall that carries load. Stock 3D
+    -- Honeycomb passes through that state in one layer out of nineteen; this holds it.
+    --
+    -- 0 leaves no zigzag at all, which is plain `rectilinear`. 1 leaves no straight run, which
+    -- is close to stock 3D Honeycomb - the thing this exists to improve on. OrcaSlicer spends
+    -- about six layers of the thirteen in a half period on the zigzag, which is the 0.4444.
     transition = 0.4444,
 
     -- Shifts the whole pattern up, in mm. Which height the first run starts at makes no

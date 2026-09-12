@@ -1,90 +1,70 @@
 # Cross Hatch infill — a PrusaSlicer slicing plugin
 
-A `slicing.fill_planner` plugin for PrusaSlicer 3.x. It lays sparse infill as **one family of
-lines that holds its direction for a few millimetres and then turns ninety degrees**, so the
-infill is stiff without welding itself into one continuous wall.
+A `slicing.fill_planner` plugin for PrusaSlicer 3.x. It is **3D Honeycomb with the straight
+phase stretched over several layers**, which is what makes it stiff where plain 3D Honeycomb is
+not.
 
-> **This is OrcaSlicer's pattern.** Cross Hatch is theirs, and this is a reimplementation of it
-> for PrusaSlicer, which has no equivalent. Every number in `settings.lua` was measured off
-> their own output rather than guessed. Credit for the pattern belongs to OrcaSlicer.
+> **This is OrcaSlicer's pattern.** Cross Hatch is theirs; this is a reimplementation of it for
+> PrusaSlicer. The octahedron geometry follows PrusaSlicer's own `Fill3DHoneycomb`, credited
+> there to David Eccles (gringer). Every number in `settings.lua` was measured off OrcaSlicer's
+> output rather than guessed.
 
-## The problem
+## What it is
 
-PrusaSlicer's two ordinary sparse patterns sit at opposite extremes:
+PrusaSlicer already ships the tessellation: `3dhoneycomb` slices a stack of truncated
+octahedra, so each layer is a zigzag whose amplitude rises and falls with Z. When the amplitude
+reaches zero the zigzag flattens into **straight lines** — and that is the useful state, because
+straight lines stacked on top of each other fuse into a wall that carries load.
 
-- **`grid`** lays both families of lines on every layer. The infill fuses into two continuous
-  walls running the whole height of the part — stiff, and a plane for the part to come apart
-  along, which is the same seam `alternate-extra-wall` exists to break up.
-- **`rectilinear`** lays one family and turns it 90° every layer. There is no wall at all, but
-  consecutive layers cross at right angles and touch each other at points rather than along
-  lines.
+Stock 3D Honeycomb passes through that state instantly. Its amplitude follows a sawtooth, so
+the lines are straight for one layer out of nineteen, and the direction flips **every layer**
+on top of that. Nothing gets a chance to fuse.
 
-Cross Hatch is the middle. One family of lines holds its direction for long enough that several
-layers fuse into something stiff, and then turns 90° over a few more layers, so the wall never
-runs the height of the part.
+Cross Hatch holds the straight phase for a few millimetres — long enough for those layers to
+become a wall — and then runs the zigzag to carry the pattern round to the perpendicular
+direction, so the wall never runs the whole height of the part. It sits between `grid` (two
+continuous walls all the way up, a plane to come apart along) and `rectilinear` (no wall at all,
+consecutive layers crossing at right angles and touching at points).
 
-## What OrcaSlicer actually does
+**The direction turns at the peak of the zigzag, not in the straight phase.** At full amplitude
+the pattern about 45° and the pattern about 135° are the same lattice, so the change is
+invisible. That is `Fill3DHoneycomb`'s `curveType`, switched once per half period instead of
+once per layer.
 
-Read off `orca_alternate_extra_wall.gcode`, which was sliced with `sparse_infill_pattern =
-crosshatch`, layer by layer:
+## Measured, against OrcaSlicer's own file
 
-| Z | dominant line angle | |
+The same part, layer by layer. "Straight" and "zigzag" here are the share of extrusion length
+running along the line's own direction:
+
+| Z | this plugin | OrcaSlicer |
 |---|---|---|
-| 1.00 – 2.20 | 45° | holds, 7 layers |
-| 2.40 – 3.40 | 52° … 127° | turning, 6 layers |
-| 3.60 – 5.00 | 135° | holds, 8 layers |
-| 5.20 – 6.20 | turning | 6 layers |
-| 6.40 – 7.60 | 45° | holds |
+| 1.00 – 2.40 | 45°, straight | 45°, straight |
+| 2.60 – 3.20 | zigzag, **turning 45° → 135° at Z 3.00** | zigzag, **turning at Z 3.00** |
+| 3.40 – 5.20 | 135°, straight | 135°, straight |
+| 5.40 – 5.80 | zigzag, turning 135° → 45° | zigzag, turning |
+| 6.20 – 7.20 | 45°, straight | 45°, straight |
 
-A full cycle — 45° back to 45° — is **5.4 mm**, so a half period is 2.7 mm, of which about
-**44 %** is spent turning. Those are the defaults here, and they are measurements, not guesses.
+Period, phase, where the straight runs sit and where the turn happens all agree. The zigzag
+amplitude rises and falls as it should — measured 0.35, 0.96, 1.31, **1.40**, 1.31, 0.96,
+0.35 mm across a transition, peaking at half a grid cell.
 
-## Measured
+Two differences, both small and both explained:
 
-A 20 × 20 × 16 mm block at 15 % `rectilinear`, with and without the plugin:
+- **Our straight layers measure 100 % along-direction where OrcaSlicer's measure 79–89 %.** That
+  is the links: the stock filler joins consecutive lines with extruded arcs along the boundary,
+  and a fill planner's paths are separate lines with a travel between them.
+- **Our zigzag bottoms out at 66 % where theirs reaches 49 %**, which is the same links counted
+  against the zigzag.
 
-| | stock `rectilinear` | cross-hatch |
-|---|---|---|
-| line spacing | 2.714 mm | **2.714 mm** |
-| lines per layer | 10 | **10** |
-| infill path | 152.3 mm/layer | 126.5 mm/layer |
-| infill filament | 893.0 mm³ | **740.0 mm³** (−17 %) |
+Material on a 20 × 20 × 16 mm block at 15 %:
 
-(20 × 20 × 16 mm block; the angle comparison below is from a different, taller part.)
+| | infill filament |
+|---|---|
+| stock `rectilinear` | 893.0 mm³ |
+| stock `3dhoneycomb` | 914.6 mm³ |
+| this plugin | **771.7 mm³** (−14 %) |
 
-**The lattice is the same lattice** — same spacing, same count. The 17 % is not lower density,
-it is the *links*: the stock filler joins its lines with extruded arcs along the boundary, and
-a planner's paths are separate lines with a travel between them. Less material and more travel,
-which is the trade this hook makes on every plugin that uses it.
-
-### Against OrcaSlicer, on the same part
-
-The runs where the angle is held — the part that matters — line up:
-
-| | this plugin | OrcaSlicer |
-|---|---|---|
-| 45° | Z 1.00 – **2.20** | Z 1.20 – **2.20** |
-| 135° | Z 3.60 – **5.00** | Z 3.60 – **5.00** |
-| 45° | Z 6.20 – **7.60** | Z 6.40 – **7.60** |
-| 135° | Z 9.00 – **10.40** | Z 9.00 – **10.40** |
-| 45° | Z 11.60 – **13.00** | Z 11.80 – **13.00** |
-| 135° | Z 14.40 – **15.80** | Z 14.40 – **15.80** |
-| 135° | Z 19.80 – **21.20** | Z 20.00 – **21.20** |
-
-**Every run ends on the same layer**, and the period and phase are the same all the way up a
-25 mm part. The starts differ by a layer or two because the turn takes slightly longer there
-than here.
-
-### The turn itself is not the same, and that is deliberate
-
-In a transition layer OrcaSlicer's lines are **curved** — one layer carries a spread of
-directions, which is why no single angle dominates it. This plugin rotates the whole family of
-straight lines instead, so a transition layer has one intermediate angle: 52°, 67°, 82°, 97°,
-112° and then 135°.
-
-The effect is the same — consecutive layers cross, so the infill is keyed vertically instead of
-fusing into a wall — and straight lines are what a fill planner can lay without a geometry
-library. If the curves turn out to matter, they are the obvious next thing.
+Again the links, not lower density — the grid cell is `spacing / density` in all three.
 
 ## Settings
 
@@ -94,11 +74,11 @@ defaults apply.
 
 | setting | default | what it does |
 |---|---|---|
-| `angle` | `45` | Direction of the lines in the first run, in degrees. |
-| `half_period` | `2.7` | How far the pattern climbs before it has turned a full 90°, in mm. Shorter is more lattice-like, longer is stiffer with taller continuous faces. `0` turns the plugin off. |
-| `transition` | `0.4444` | How much of each half period is spent turning rather than holding, 0 to 1. `0` turns over in one layer, which is what `rectilinear` does and what this pattern exists to avoid. |
+| `angle` | `45` | Direction of the straight runs, in degrees. |
+| `half_period` | `2.7` | How far the pattern climbs between one straight run and the next, in mm. Longer means stiffer runs and taller continuous faces; shorter is more lattice-like. `0` turns the plugin off. |
+| `transition` | `0.4444` | How much of each half period is the zigzag rather than the straight run, 0 to 1. `0` makes it plain `rectilinear`; `1` makes it something close to stock 3D Honeycomb, which is the thing this exists to improve on. |
 | `z_offset` | `4.6` | Shifts the whole pattern up, in mm. Makes no difference to what the infill does; it exists so the output can be lined up with OrcaSlicer's. |
-| `roles` | `InternalInfill` | Which surfaces to take over. Sparse infill only — solid, top and bridge surfaces have their own reasons for the pattern they use. |
+| `roles` | `InternalInfill` | Sparse infill only — solid, top and bridge surfaces have their own reasons for the pattern they use. |
 | `skip_first_layers` | `0` | Leave this many layers at the bed alone. |
 
 ## Use it with `rectilinear`, not `grid`
@@ -114,13 +94,11 @@ spacing comes out at half the density.
 
 > given a surface the slicer is about to fill, lay the paths for it.
 
-Requires the fork: <https://github.com/dzwiedziu-nkg/PrusaSlicer> at `529aba88b2` or later,
-with the hook at API 1.2.0 — that is the version which tells a planner the **density**, without
-which it cannot know how far apart a sparse pattern's lines belong.
+Requires the fork: <https://github.com/dzwiedziu-nkg/PrusaSlicer> at `529aba88b2` or later, with
+the hook at API 1.2.0 — that is the version which tells a planner the **density**, without which
+it cannot know how big the octahedron's cell is.
 
 ## Running it
-
-Symlink the bundle into the slicer's datadir, by the name in `manifest.json`:
 
 ```bash
 ln -sfn "$PWD/com.github.dzwiedziu-nkg.cross-hatch" \
