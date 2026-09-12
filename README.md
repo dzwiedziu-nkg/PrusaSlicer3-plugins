@@ -21,18 +21,26 @@ is bit for bit the stock output — that is checked for every one of them.
 | [`island-order/`](island-order/) | `slicing.island_order` | Chooses which of a layer's disjoint islands to print next, so a tall thin one is not returned to while it is still soft. |
 | [`sequential-islands/`](sequential-islands/) | `slicing.island_sequence` | Finishes one upper part of an object to the top before starting the other, once they have split from a common base. Experimental. |
 | [`short-extrusion/`](short-extrusion/) | `slicing.extrusion_filter` | Drops extrusions too short to be worth the travel that reaches them. |
+| [`cross-hatch/`](cross-hatch/) | `slicing.fill_planner` | Lays sparse infill as one family of lines that holds its direction for a few millimetres and then turns ninety degrees, so the infill is stiff without welding itself into one continuous wall. **A reimplementation of OrcaSlicer's Cross Hatch.** |
+| [`gradient-infill/`](gradient-infill/) | `slicing.fill_planner` | Packs the sparse infill closer near the walls and lets it open out towards the middle, so the material goes where the part is stiffest. |
 | [`radial-bridge/`](radial-bridge/) | `slicing.fill_planner` | Bridges an annular gap with spokes from the inner island to the surrounding wall, instead of parallel lines across the whole opening. |
 | [`support-ironing/`](support-ironing/) | `slicing.pass_planner` | Irons the top of a support interface, so the underside of the overhang cast against it comes out smooth. |
 | [`alternate-extra-wall/`](alternate-extra-wall/) | `slicing.perimeter_planner` | Adds one wall on every other layer, so the infill is wedged between walls instead of meeting the same seam all the way up. |
 | [`purge-after-pause/`](purge-after-pause/) | `slicing.resume_planner` | Purges into the room the layer's own infill leaves, first thing after a pause or a colour change, so the wall comes through the pause without a gap and the drip lands inside the part. |
 | [`overhang-chamfer/`](overhang-chamfer/) | `slicing.slice_planner` | Chamfers small 90° overhangs away by letting each layer's outline reach only so far past the layer below, so the printer never lays a bead onto air where a chamfer would have done. |
 | [`make-overhang-printable/`](make-overhang-printable/) | `slicing.slice_planner` | Carries an overhang on a cone of new material built up from underneath, so it is printed on a slope instead of onto air. **A reimplementation of OrcaSlicer's `make_overhang_printable`.** |
+| [`overhang-by-size/`](overhang-by-size/) | `slicing.slice_planner` | Chamfers small overhangs off and carries big ones on a cone, choosing by size — what the two plugins above do, in one. |
 | [`wipe-tower-cancel/`](wipe-tower-cancel/) | `slicing.object_labels` | Puts the wipe tower on the list of objects the printer can cancel mid-print. |
 
-**Two of these share a hook.** `overhang-chamfer` and `make-overhang-printable` are both
-`slicing.slice_planner`, and the slicer loads one plugin of each type — so symlink one or the
-other, not both. They are two answers to the same question: take the overhang off, or put
-something under it.
+**Several of these share a hook, and the slicer loads one plugin of each type** — so where two
+rows name the same extension point, symlink one or the other, not both.
+
+- `overhang-chamfer`, `make-overhang-printable` and `overhang-by-size` are all
+  `slicing.slice_planner`. They are answers to the same question — take the overhang off, or put
+  something under it — and `overhang-by-size` is the superset: it does both, choosing by size.
+- `cross-hatch`, `gradient-infill` and `radial-bridge` are all `slicing.fill_planner`. Two
+  infill patterns are alternatives the way `fill_pattern` is; `radial-bridge` only touches
+  bridges, so it is the one you would most want alongside another, and cannot have.
 
 ## Installing one
 

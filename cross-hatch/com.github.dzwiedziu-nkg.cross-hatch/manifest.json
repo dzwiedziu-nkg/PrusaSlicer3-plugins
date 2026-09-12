@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.cross-hatch",
+	"name": "Cross Hatch infill",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Lays sparse infill as one family of lines that holds its direction for a few millimetres and then turns ninety degrees, so the infill is stiff without welding itself into one continuous wall. A reimplementation of OrcaSlicer's Cross Hatch pattern for PrusaSlicer.",
+	"required_apis": {"slicing.fill_planner": "1.2.0"},
+	"category": "slicing",
+	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
+}

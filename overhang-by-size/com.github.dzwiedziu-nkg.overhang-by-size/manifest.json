@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.overhang-by-size",
+	"name": "Overhang by size",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Chamfers small overhangs off and carries big ones on a cone, choosing between the two by how much material each would cost. What overhang-chamfer and make-overhang-printable do, in one plugin, so you do not have to pick one for the whole print.",
+	"required_apis": {"slicing.slice_planner": "1.2.0"},
+	"category": "slicing",
+	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
+}
