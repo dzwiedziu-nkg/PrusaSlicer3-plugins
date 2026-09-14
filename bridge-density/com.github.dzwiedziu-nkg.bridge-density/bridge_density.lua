@@ -15,11 +15,23 @@
 -- spans the gap alone, and a strand alone sags.
 --
 -- This lays them at the bead diameter instead, or closer, so they touch along their length and
--- hold each other up. The flow is left alone, so each strand is the same strand - there is just
--- less air between them, which is what "bridge density above 100 %" means.
+-- hold each other up. Two knobs, the same two OrcaSlicer has: `density` sets how far apart the
+-- strands go as a fraction of their own width, and `flow_ratio` sets how fat they are. Measured
+-- on OrcaSlicer's own output, its `bridge_density` changes only the spacing and its
+-- `bridge_flow` only the strand, exactly as these two do.
 --
 -- The direction is the slicer's own `bridge_angle`. That choice is made from the shape of the
 -- opening and the anchors available, and it is not this plugin's business to second-guess it.
+--
+-- It can also give them their own speed. PrusaSlicer has one `bridge_speed` for both kinds of
+-- bridge because both are the same extrusion role to it, so raising it for the internal ones
+-- speeds up the external ones too. Setting `speed` here separates them.
+--
+-- Only the **external** bridges - the ones cast over open air. PrusaSlicer gives a bridge over
+-- sparse infill the same extrusion role and the same `bridge_speed`, so the two cannot be told
+-- apart from the role; `external` on the surface is what separates them. OrcaSlicer keeps them
+-- apart as `bridge_density` and `internal_bridge_density` and defaults the internal one to
+-- 100 %, which is the same judgement.
 
 info = {
     id = "bridge_density",
@@ -29,11 +41,18 @@ info = {
 local ok, user_settings = pcall(require, "settings")
 local settings = (ok and type(user_settings) == "table") and user_settings or {}
 
-local overlap = settings.overlap == nil and 0.0 or settings.overlap
+local density = settings.density == nil and 1.0 or settings.density
+local flow_ratio = settings.flow_ratio == nil and 1.0 or settings.flow_ratio
 local extra_spacing = settings.extra_spacing == nil and 0.05 or settings.extra_spacing
 local match_stock_material = settings.match_stock_material == true
 local roles = settings.roles == nil and {BridgeInfill = true} or settings.roles
+local speed = settings.speed == nil and 0 or settings.speed
+local external_only = settings.external_only ~= false
 local max_lines = settings.max_lines == nil and 4000 or settings.max_lines
+
+-- How far inside the boundary a line stops, so the turn onto the next one survives the clip the
+-- slicer runs afterwards. A chord starting exactly on the boundary lands outside as often as in.
+local EDGE_INSET = 0.05
 
 --- Signed area of a closed contour, in mm2.
 local function contour_area(points)
@@ -71,18 +90,67 @@ local function polyline_length(path)
     return total
 end
 
---- Parallel lines at `step` across the surface, running along `theta`.
--- Laid out from the plate origin so neighbouring surfaces of a layer share the same lines, and
--- walked alternately so the head ends each one near the start of the next.
-local function lines_at(points, theta, step)
+--- Where a line crosses the boundary, as distances along the line direction.
+-- The line runs through the origin along (dx, dy); a point is on it when its component along
+-- the normal equals `d`. Every edge that straddles that value contributes one crossing.
+local function crossings(points, d, dx, dy, nx, ny, out)
+    local n = #points
+    if n < 3 then
+        return
+    end
+    local prev = points[n]
+    local pn = prev.x * nx + prev.y * ny - d
+    for i = 1, n do
+        local cur = points[i]
+        local cn = cur.x * nx + cur.y * ny - d
+        if (pn > 0) ~= (cn > 0) then
+            local u = pn / (pn - cn)
+            local px = prev.x + u * (cur.x - prev.x)
+            local py = prev.y + u * (cur.y - prev.y)
+            out[#out + 1] = px * dx + py * dy
+        end
+        prev, pn = cur, cn
+    end
+end
+
+--- The spans of one line that lie inside the surface, as {from, to} pairs along the direction.
+local function spans_of(surface, d, dx, dy, nx, ny)
+    local ts = {}
+    crossings(surface.contour, d, dx, dy, nx, ny, ts)
+    if surface.holes ~= nil then
+        for _, hole in ipairs(surface.holes) do
+            crossings(hole, d, dx, dy, nx, ny, ts)
+        end
+    end
+    table.sort(ts)
+    local spans = {}
+    for i = 1, #ts - 1, 2 do
+        -- Pull the ends in a hair. The turn at the end of a line is a chord between two points
+        -- on the boundary, and a chord that starts exactly on the boundary is a coin toss for
+        -- the clipper the slicer runs afterwards - it lands outside as often as in, and the
+        -- turn is dropped. Inside by a twentieth of a millimetre it survives, and the length
+        -- lost is anchor that reaches past the opening anyway.
+        local a, b = ts[i] + EDGE_INSET, ts[i + 1] - EDGE_INSET
+        if b - a > 1e-6 then
+            spans[#spans + 1] = {a, b}
+        end
+    end
+    return spans
+end
+
+--- Parallel lines at `step` across the surface, walked as continuous paths.
+--
+-- Laid out from the plate origin so neighbouring surfaces of a layer share the same lines. Each
+-- line is cut to the spans that lie inside the surface here rather than left to the slicer,
+-- because knowing where a line ends is what makes it possible to turn round at that end and
+-- come back along the next one. Separate lines mean a travel and a retraction between every
+-- pair, and on a bridge they also mean every strand starts from a standstill.
+local function lines_at(surface, theta, step)
     local dx, dy = math.cos(theta), math.sin(theta)
     local nx, ny = -dy, dx
-    local alo, ahi, plo, phi = math.huge, -math.huge, math.huge, -math.huge
-    for _, p in ipairs(points) do
-        local a = p.x * dx + p.y * dy
+    local plo, phi = math.huge, -math.huge
+    for _, p in ipairs(surface.contour) do
         local q = p.x * nx + p.y * ny
-        if a < alo then alo = a end
-        if a > ahi then ahi = a end
         if q < plo then plo = q end
         if q > phi then phi = q end
     end
@@ -97,20 +165,51 @@ local function lines_at(points, theta, step)
     end
 
     local paths = {}
+    local open = {}                  -- spans of the previous line, with the path each belongs to
+    local flip = false
     for k = first, last do
         local d = k * step
-        local px, py = d * nx, d * ny
-        local a, b = alo - step, ahi + step
-        if ((k % 2) + 2) % 2 == 1 then a, b = b, a end
-        paths[#paths + 1] = {
-            {x = px + a * dx, y = py + a * dy},
-            {x = px + b * dx, y = py + b * dy}
-        }
+        local spans = spans_of(surface, d, dx, dy, nx, ny)
+        local next_open = {}
+        for _, sp in ipairs(spans) do
+            local a, b = sp[1], sp[2]
+            -- Continue whichever path ended on a span this one overlaps, so the head turns
+            -- round at the edge instead of flying back across the opening.
+            local path = nil
+            for i, prev in ipairs(open) do
+                if prev.a < b and a < prev.b then
+                    path = prev.path
+                    table.remove(open, i)
+                    break
+                end
+            end
+            if path == nil then
+                path = {}
+                paths[#paths + 1] = path
+            end
+            if flip then
+                path[#path + 1] = {x = b * dx + d * nx, y = b * dy + d * ny}
+                path[#path + 1] = {x = a * dx + d * nx, y = a * dy + d * ny}
+            else
+                path[#path + 1] = {x = a * dx + d * nx, y = a * dy + d * ny}
+                path[#path + 1] = {x = b * dx + d * nx, y = b * dy + d * ny}
+            end
+            next_open[#next_open + 1] = {a = a, b = b, path = path}
+        end
+        open = next_open
+        flip = not flip
     end
-    if #paths == 0 then
+
+    local kept = {}
+    for _, path in ipairs(paths) do
+        if #path >= 2 then
+            kept[#kept + 1] = path
+        end
+    end
+    if #kept == 0 then
         return nil
     end
-    return paths
+    return kept
 end
 
 --- Lays out one surface.
@@ -126,31 +225,55 @@ function plan_fill(surface)
     if surface.bridge_angle == nil or surface.bridge_angle < 0.0 then
         return nil
     end
+    -- PrusaSlicer gives both kinds of bridge the same extrusion role, so the role alone does
+    -- not say whether this one is cast in mid-air or laid over sparse infill. `external` does.
+    -- A bridge over infill rests on a lattice every few millimetres; it is not sagging for want
+    -- of lateral contact, and packing its lines together only adds plastic inside the part.
+    if external_only and surface.external ~= true then
+        return nil
+    end
     if surface.spacing <= 0.0 then
         return nil
     end
 
-    -- What the slicer hands over for a bridge is the bead diameter plus the gap it inserts on
-    -- purpose. Take the gap back out and that is the bead.
-    local bead = surface.spacing - extra_spacing
+    -- The bead is worked out from the flow, not from the spacing. For a bridge the slicer
+    -- extrudes the area of a circle, so the strand is sqrt(4*V/pi) across. Deriving it from
+    -- `spacing` instead is wrong on any region the slicer had to adjust the spacing for: it
+    -- fits a whole number of lines across, so a narrow opening comes back with the lines
+    -- already closer than nominal, and subtracting the gap again lands short.
+    local bead
+    if surface.mm3_per_mm ~= nil and surface.mm3_per_mm > 0.0 then
+        bead = math.sqrt(4.0 * surface.mm3_per_mm / math.pi)
+    else
+        bead = surface.spacing - extra_spacing
+    end
     if bead <= 0.0 then
         return nil
     end
-    local step = bead * (1.0 - overlap)
+    -- More flow makes a fatter strand, and the strand is what the spacing is measured against.
+    bead = bead * math.sqrt(flow_ratio)
+    -- `density` is the ratio of strand to spacing: 1.0 puts them edge to edge, 1.14 gives them
+    -- 14 % of overlap, 0.4 leaves a gap of one and a half strands. Deliberately not measured
+    -- against the slicer's own spacing, which differs between slicers and between regions of
+    -- one layer; the strand either touches its neighbour or it does not, and that is absolute.
+    if density <= 0.0 then
+        return nil
+    end
+    local step = bead / density
     if step <= 0.0 then
         return nil
     end
-    -- Nothing to do if the slicer was already going to lay them this close or closer.
-    if step >= surface.spacing then
-        return nil
-    end
 
-    local paths = lines_at(surface.contour, surface.bridge_angle, step)
+    local paths = lines_at(surface, surface.bridge_angle, step)
     if paths == nil then
         return nil
     end
 
     if not match_stock_material then
+        if speed > 0 or flow_ratio ~= 1.0 then
+            return {paths = paths, flow_ratio = flow_ratio,
+                    speed = speed > 0 and speed or nil}
+        end
         return paths
     end
 
@@ -165,5 +288,6 @@ function plan_fill(surface)
     if laid <= 1e-9 or wanted <= 0.0 then
         return paths
     end
-    return {paths = paths, flow_ratio = wanted / laid}
+    return {paths = paths, flow_ratio = flow_ratio * wanted / laid,
+            speed = speed > 0 and speed or nil}
 end
