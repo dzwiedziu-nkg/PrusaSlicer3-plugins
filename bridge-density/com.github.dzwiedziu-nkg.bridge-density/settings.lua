@@ -55,7 +55,7 @@ return {
     --
     -- Set `bridge_speed` for the internal ones and put the external speed here. With
     -- `external_only` left on, this only ever touches bridges over open air.
-    speed = 0,
+    speed = 10,
 
     -- Roles to take over. Bridges only: this is about beads laid in mid-air, and a bead laid
     -- on solid plastic below it is a flattened rectangle, not a cylinder.

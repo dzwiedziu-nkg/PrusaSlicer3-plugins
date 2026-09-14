@@ -70,13 +70,24 @@ Measured on four OrcaSlicer exports of this same part, its two settings are clea
 `spacing = 0.357 / bd` and `bead = 0.302 × √bf`, to three decimals in all four. So:
 
 ```
-density   = 0.846 × orca_bridge_density × √(orca_bridge_flow)
-flow_ratio = orca_bridge_flow
+density    = 0.846 × orca_bridge_density × √(orca_bridge_flow)
+flow_ratio = orca_bridge_flow × (orca_bead / our_bead)²
 ```
 
-where 0.846 is `0.302 / 0.357`, Orca's coverage at 100 %. Your 114 % comes to
-**`density ≈ 0.96`** — which is still 4 % short of the strands touching, and worth knowing
-before you copy the number across. `flow_ratio` is 1:1 with `bridge_flow`.
+where 0.846 is `0.302 / 0.357`, Orca's coverage at 100 %. Note that Orca's **100 % does not mean
+touching** — it is 15 % short of it, which is the whole reason this plugin exists.
+
+Checked by slicing the same part both ways, with `flow_ratio = 0.874` to match Orca's thinner
+strand (0.302 against this profile's 0.323):
+
+| Orca | this plugin | our spacing | Orca's | our coverage | Orca's |
+|---|---|---|---|---|---|
+| `bd 40 %` | `density = 0.338` | 0.891 mm | 0.893 | 0.339 | 0.338 |
+| `bd 100 %` | `density = 0.845` | 0.356 mm | 0.357 | 0.848 | 0.845 |
+| `bd 114 %` | `density = 0.963` | 0.313 mm | 0.313 | 0.964 | 0.963 |
+
+Spacing, bead and coverage all agree to the thousandth. Leave `flow_ratio` at 1.0 and you keep
+this profile's own strand, which is fatter — same coverage, more plastic.
 
 **The 0.846 is specific to that profile**, because Orca's "100 %" is a fraction of its own
 nominal line spacing. `density` here is a fraction of the strand, which is absolute: the strand
