@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.reverse-on-even",
+	"name": "Reverse on even",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Walks the wall loops of every other layer the other way round, so a wall hanging over air is laid in alternating directions and the stresses in consecutive layers pull against each other instead of all the same way. A reimplementation of OrcaSlicer's overhang_reverse for PrusaSlicer.",
+	"required_apis": {"slicing.loop_direction": "1.0.0"},
+	"category": "slicing",
+	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
+}
