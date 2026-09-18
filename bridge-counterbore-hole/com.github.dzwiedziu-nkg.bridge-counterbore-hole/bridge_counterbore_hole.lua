@@ -31,6 +31,7 @@ local ok, user_settings = pcall(require, "settings")
 local settings = (ok and type(user_settings) == "table") and user_settings or {}
 
 local enabled = settings.enabled ~= false
+local mode = settings.mode or "sacrificial"
 local max_hole = settings.max_hole == nil and 10.0 or settings.max_hole
 local angle = settings.angle == nil and 35 or settings.angle
 local min_z = settings.min_z == nil and 0.0 or settings.min_z
@@ -53,7 +54,7 @@ end
 --              and islands.
 -- @return a table naming max_overhang, max_overhang_width and the remedy, or nil.
 function plan_slice(layer)
-    if not enabled or reach_per_mm == nil then
+    if not enabled or mode ~= "sacrificial" or reach_per_mm == nil then
         return nil
     end
     if layer.print_z < min_z then

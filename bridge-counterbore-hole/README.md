@@ -1,12 +1,16 @@
 # Bridge counterbore holes — a PrusaSlicer slicing plugin
 
-A `slicing.slice_planner` plugin for PrusaSlicer 3.x. It closes a hole for the one layer where
-the opening under it narrows, so the step is bridged in a single span instead of being walled in
-mid-air. **The disc it leaves has to be drilled or pushed out afterwards.**
+Two plugins in one bundle, for PrusaSlicer 3.x, that stop a counterbore being walled in mid-air.
+They are OrcaSlicer's two modes and `settings.lua` picks one:
 
-> **This is OrcaSlicer's feature.** `counterbore_hole_bridging` is theirs; this is a
-> reimplementation of its `sacrificiallayer` mode for PrusaSlicer, which has no equivalent.
-> Their other mode is not reproduced, and the section at the end says why.
+| `mode` | what happens at the step layer | what it costs |
+|---|---|---|
+| `"sacrificial"` | the hole is closed for that one layer and the whole opening is bridged | **a disc to drill out** |
+| `"partial"` | the hole stays open and the wall round it is left to the fill stage | the hole's wall is missing on that layer |
+| `"off"` | the stock slicer | the ring is walled in mid-air |
+
+> **This is OrcaSlicer's feature.** `counterbore_hole_bridging` is theirs, in both of its modes;
+> this is a reimplementation of it for PrusaSlicer, which has no equivalent.
 
 ## The problem, and what PrusaSlicer already does about it
 
@@ -25,11 +29,20 @@ this plugin removes.
 
 Measured on a 24 × 24 × 6 mm block with a Ø12 counterbore and a Ø6 hole, at the step layer:
 
-| | bridge laid | wall printed in mid-air |
-|---|---|---|
-| stock PrusaSlicer | 240.4 mm over 91 moves | **42.9 mm over 64 moves** |
-| with this plugin | 348.8 mm over 59 moves | **none** |
-| OrcaSlicer, `sacrificiallayer` | comparable | none |
+| | bridge laid | wall in mid-air | hole at the centre |
+|---|---|---|---|
+| stock PrusaSlicer | 240.4 mm / 91 moves | **42.9 mm / 64 moves** | open |
+| `mode = "sacrificial"` | 348.8 mm / 59 moves | **none** | closed for one layer |
+| `mode = "partial"` | 240.4 mm / 90 moves | **none** | open |
+| OrcaSlicer `sacrificiallayer` | closes it | none | closed for one layer |
+| OrcaSlicer `partiallybridge` | 134.8 mm / 34 moves | none | open |
+
+"Hole at the centre" is measured, not assumed: the closest any extrusion comes to the middle of
+the hole is 0.00 mm with the sacrificial layer, 3.01 mm in partial mode and 3.21 mm without the
+plugin, against a hole radius of 3 mm.
+
+In partial mode the walls move outward onto held-up material - closest approach 6.60 mm against
+OrcaSlicer's 6.19 - and the layer above comes back with its hole, resting on what was bridged.
 
 On the half-size version of the same part, Ø6 over Ø3, the wall in mid-air is 7.1 mm over 2
 moves without the plugin and none with it. The effect scales with the hole, which is why a small
@@ -40,26 +53,34 @@ test part makes the problem look negligible.
 Almost nothing, because the sacrificial layer replaces extrusions that were being laid in the
 air anyway:
 
-| | filament | estimated time |
+| Ø12 over Ø6 | filament | estimated time |
 |---|---|---|
-| Ø6 over Ø3, without | 274.93 mm | 4m 0s |
-| Ø6 over Ø3, with | 274.70 mm | 4m 0s |
-| Ø12 over Ø6, without | 1144.67 mm | 9m 23s |
-| Ø12 over Ø6, with | 1145.69 mm | 9m 21s |
+| stock | 1144.67 mm | 9m 23s |
+| `"sacrificial"` | 1145.69 mm | 9m 21s |
+| `"partial"` | 1169.31 mm | 9m 23s |
 
-The real cost is the disc. It is one layer thick and it is inside the hole, so it comes out with
-a drill, a screwdriver or a push — but it does have to come out.
+The sacrificial layer is free because it replaces extrusions that were being laid in the air
+anyway; on the half-size part it comes out *cheaper*, 274.93 mm against 274.70. Partial mode
+costs 2.2 % more, which is the anchor band and the extra wall loops round it.
+
+The real cost of the sacrificial layer is the disc. It is one layer thick and it is inside the
+hole, so it comes out with a drill, a screwdriver or a push — but it does have to come out.
+That is the whole of the choice between the two modes.
 
 ## What it does not touch
 
-**An ordinary hole going straight down.** The test is the *rim*: the band just outside the hole,
-`layer_height / tan(angle)` wide, has to be mostly over air before the hole is closed. A hole
-going straight down has its rim resting on the layer below, and so does a bore that tapers
-gently enough. Verified on a block with a plain Ø6 through-hole: **0 layers capped, and the
-G-code is identical to the run with no plugin installed.**
+**An ordinary hole going straight down.** Neither mode touches one, and both are checked against
+a generated block with a plain Ø6 through-hole: **G-code identical to the run with no plugin
+installed**, in both modes.
 
-This matters more than it sounds. A plugin that closed every hole it found would fill every
-screw hole in every part.
+The tests are different but the idea is the same in each. The sacrificial layer looks at the
+*rim*: the band just outside the hole, `layer_height / tan(angle)` wide, has to be mostly over
+air. Partial mode looks at the material: the part of the region that is not over the layer below
+has to be wider than one perimeter spacing and has to touch a hole. A hole going straight down
+fails both, and so does a bore that tapers gently.
+
+This matters more than it sounds. A plugin that acted on every hole it found would fill or
+unwall every screw hole in every part.
 
 ## Requirements
 
@@ -75,8 +96,10 @@ ln -sfn "$PWD/bridge-counterbore-hole/com.github.dzwiedziu-nkg.bridge-counterbor
 ```
 
 **Install this instead of `overhang-chamfer`, `make-overhang-printable` or `overhang-by-size`,
-not alongside them.** All four are `slicing.slice_planner` plugins and the slicer loads one
-plugin of each type; the first by id wins and the rest are ignored with a warning in the log.
+not alongside them** — all four use `slicing.slice_planner`, and the slicer loads one plugin of
+each type; the first by id wins and the rest are ignored with a warning in the log. In
+`mode = "partial"` it also takes `slicing.perimeter_planner`, so it displaces
+`alternate-extra-wall` as well.
 
 ## Settings
 
@@ -87,34 +110,37 @@ the defaults apply.
 | setting | default | what it does |
 |---|---|---|
 | `enabled` | `true` | `false` turns the plugin off without removing it |
-| `max_hole` | `10.0` | the largest opening that may be closed, in mm, as the largest disc that fits inside it |
-| `angle` | `35` | how far a rim has to hang before the hole counts, as a slope in `support_material_threshold`'s convention |
+| `mode` | `"sacrificial"` | `"sacrificial"`, `"partial"` or `"off"` — see the table at the top |
+| `max_hole` | `10.0` | sacrificial only: the largest opening that may be closed, in mm, as the largest disc that fits inside it |
+| `angle` | `35` | sacrificial only: how far a rim has to hang before the hole counts, as a slope in `support_material_threshold`'s convention |
+| `anchor` | `0.0` | partial only: how far the fill may reach into held-up material for the bridge to rest on, in mm. 0 asks the slicer for one perimeter spacing |
+| `min_unsupported` | `0.0` | partial only: ignore unsupported pieces narrower than this, in mm. 0 asks the slicer for one perimeter spacing |
 | `min_z` | `0.0` | leave everything below this height alone |
+
+The two modes are alternatives and cannot be combined: closing the hole leaves no wall for the
+other mode to remove. The bundle holds a plugin for each — one on `slicing.slice_planner` and
+one on `slicing.perimeter_planner` — and both read this one file, so `mode` switches both.
 
 `max_hole` is the whole of the safety and **`0` does not mean "no limit" in a useful sense** —
 it means the same as everywhere else, no limit, which here is a sacrificial layer across a bore
 of any size. 10 mm covers a screw counterbore, which is what this is for.
 
-## The mode that is not here
+## Why it is two plugins
 
-OrcaSlicer has a second mode, `partiallybridge`, which keeps the hole open and only stops the
-wall being drawn over the unsupported part. It is not reproduced here, and the reason is worth
-writing down rather than leaving as a gap.
+The two modes act at different points in the slicer and neither can be done where the other is.
 
-That mode is a decision about *perimeters*: it takes the unsupported area out of the surfaces
-the perimeter generator is about to run on, so no wall is generated there at all, and hands it
-to the fill stage instead. This extension point runs earlier, on the outlines as they come off
-the mesh, and can only change what those outlines are. Closing the hole is expressible; "keep
-the hole but do not wall it" is not.
+**The sacrificial layer is a change to the outline.** It closes a hole on one layer, which is
+something `slicing.slice_planner` can express: it is handed each layer as it comes off the mesh
+and may change what it is. That is the `"cap"` remedy, next to the chamfer and the cone.
 
-Measured at the same step layer, so the difference is on the record: their `partiallybridge`
-lays 34.5 mm of bridge over 29 moves and no wall in mid-air, against stock PrusaSlicer's 67.4 mm
-of bridge and 7.1 mm of wall. Note that it lays *less* bridge than PrusaSlicer already does —
-the thing it removes is the wall, not the gap.
+**Partial mode is a change to what gets walled**, not to the outline: the material stays, the
+wall does not. That is a decision the perimeter stage makes, so it needs
+`slicing.perimeter_planner` — which already existed for the wall *count* and now also answers
+what happens to the part of a region that hangs over air.
 
-Reaching it would need a second extension point, in the perimeter stage, along the lines of
-"given a layer's surfaces and what is under them, decide which areas are walled and which are
-filled". That is a bigger question than this one and nobody has needed it yet.
+A bundle may hold several plugins, so both ship in this directory and `settings.lua` is shared.
+That is also why `mode` is one setting rather than two switches: running both would close the
+hole and then remove a wall that is no longer there.
 
 ## Licence
 

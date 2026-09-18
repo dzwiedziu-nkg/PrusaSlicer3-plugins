@@ -5,8 +5,8 @@
 	"min_slicer_version": "3.0.0",
 	"version": "0.1.0",
 	"author": "dzwiedziu-nkg",
-	"description": "Closes a hole for the one layer where the opening under it narrows, so the step is bridged across instead of being walled in mid-air. The sacrificial layer has to be drilled out afterwards. A reimplementation of OrcaSlicer's counterbore_hole_bridging for PrusaSlicer.",
-	"required_apis": {"slicing.slice_planner": "1.3.0"},
+	"description": "Stops a counterbore being walled in mid-air, either by closing the hole for one layer or by leaving the unsupported ring to the fill stage. A reimplementation of OrcaSlicer's counterbore_hole_bridging for PrusaSlicer, in both of its modes.",
+	"required_apis": {"slicing.slice_planner": "1.3.0", "slicing.perimeter_planner": "1.1.0"},
 	"category": "slicing",
 	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
 	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
