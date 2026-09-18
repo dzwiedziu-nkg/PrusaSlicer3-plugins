@@ -118,6 +118,14 @@ Same paths, same material, same estimated time; 6.15 mm less travel, because a g
 printed where the head already is saves a move. This half has no cost to weigh against whatever
 it is worth on the print — which, again, only the print can say.
 
+**One honest caveat, measured on a different part.** On a plate of two counterbore test objects
+the rule fires on 19 of 75 layer slices — a bridged hole is a sparse-to-solid transition too —
+and there the fill is not quite untouched: internal infill comes out 1.9 mm longer over 7432 mm,
+which is +0.03 %, with the same number of extruded segments (11 481 both ways), the same filament
+total and the same estimated time. A run entered from somewhere else is chained and cut up
+slightly differently. Nothing is lost or added; if you need the fill byte for byte, this half is
+not for you.
+
 ## What it cannot do
 
 Two of Prusa's four experiments are still out of reach, and one of them is out of reach of the
