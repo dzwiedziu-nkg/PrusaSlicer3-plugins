@@ -5,7 +5,7 @@ They are OrcaSlicer's two modes and `settings.lua` picks one:
 
 | `mode` | what happens at the step layer | what it costs |
 |---|---|---|
-| `"partial"` (default) | the hole stays open, nothing is walled in mid-air, and only the lines that reach across are printed | the hole's wall is missing on that layer, the two lobes beside it are left empty, and 3 % more filament |
+| `"partial"` (default) | the hole stays open, nothing is walled in mid-air, and only the lines that reach across are printed | the hole's wall is missing on that layer, the two lobes beside it are taken off that layer, and 5 % more filament |
 | `"sacrificial"` | the hole is closed for that one layer and the whole opening is bridged | **a disc to drill out** |
 | `"off"` | the stock slicer | the ring is walled in mid-air |
 
@@ -32,7 +32,7 @@ Measured on a 24 × 24 × 6 mm block with a Ø12 counterbore and a Ø6 hole, at 
 | | bridge laid | wall in mid-air | hole at the centre |
 |---|---|---|---|
 | stock PrusaSlicer | 240.4 mm / 91 moves | **42.9 mm / 64 moves** | open |
-| `mode = "partial"` | 159.7 mm / 48 moves | **none** | open |
+| `mode = "partial"` | 163.5 mm / 66 moves | **none** | open |
 | `mode = "sacrificial"` | 348.8 mm / 59 moves | **none** | closed for one layer |
 | OrcaSlicer `partiallybridge` | 134.8 mm / 34 moves | none | open |
 | OrcaSlicer `sacrificiallayer` | closes it | none | closed for one layer |
@@ -43,7 +43,7 @@ radius of 3 mm.
 
 On the half-size version of the same part, Ø6 over Ø3, the wall in mid-air is 7.1 mm over 2
 moves without the plugin and none with it, and the bridge goes from 67.4 mm over 42 moves to
-47.9 mm over 20. The effect scales with the hole, which is why a small test part makes the
+62.6 mm over 49. The effect scales with the hole, which is why a small test part makes the
 problem look negligible.
 
 ### Only the lines that reach across
@@ -61,15 +61,28 @@ stay, because there is something underneath them.
 | | moves ending on the hole's rim | hops shorter than 1 mm |
 |---|---|---|
 | Ø12, before | 46 of 90 | 42, all over the opening |
-| Ø12, now | **0 of 48** | 28, all of them out on the anchor |
-| Ø6, now | **0 of 20** | 10, on the anchor |
+| Ø12, now | **0 of 66** | 46, all of them out on the anchor |
+| Ø6, now | **0 of 49** | 37, on the anchor |
 
-**What this leaves behind, and it is worth knowing before you print it.** The two lobes beside
-the hole are now empty: nothing spans them, so nothing is laid there. The layer above still
-thinks they are solid, so its own solid infill has ends landing over them — 61 moves and 103 mm
-of it on the Ø12 part, against 25 mm in the stock slice. Those ends hang over a gap two or three
-millimetres wide rather than over the open hole, and the layer above that covers them. The
-sacrificial mode does not have this problem, because it leaves nothing unspanned.
+### And the part stops claiming what it will not print
+
+The two lobes beside the hole are not printed, so they are taken off the layer's outline as well
+— otherwise the layer above reads the outline, believes them solid, and lays solid infill over
+the gap. Told the truth, it bridges them instead, anchored on the ring that was printed:
+
+| the layer above the step | solid moves with an end over nothing | bridge moves |
+|---|---|---|
+| stock PrusaSlicer | 12 (25.6 mm) | 0 |
+| without the trim | 61 (103.4 mm) | 0 |
+| **with it** | **0** | 75 |
+
+On the Ø6 part it is 2 moves in stock and **0** with the trim, with 49 bridge moves.
+
+Exactly one layer is trimmed. The pass measures each layer against the outline the *mesh* gave
+rather than the one it has just trimmed: measuring against its own work makes it chase its own
+tail, because the layer above a piece just taken off is unsupported where the piece was, and
+part of that is unbridgeable in turn. That walked three layers up the part and built solid shell
+round the void before it was fixed.
 
 ### Anchored like an ordinary bridge
 
@@ -96,11 +109,11 @@ air anyway:
 |---|---|---|
 | stock | 1144.67 mm | 9m 23s |
 | `"sacrificial"` | 1145.69 mm | 9m 21s |
-| `"partial"` | 1179.94 mm | 9m 23s |
+| `"partial"` | 1199.25 mm | 9m 27s |
 
 The sacrificial layer is free because it replaces extrusions that were being laid in the air
 anyway; on the half-size part it comes out *cheaper*, 274.93 mm against 274.70. Partial mode
-costs 3.1 % more, which is the anchor band and the wall loops moved out round it.
+costs 4.8 % more, which is the anchor band, the wall loops moved out round it, and the layer above bridging the two lobes instead of running solid infill over them.
 
 The real cost of the sacrificial layer is the disc. It is one layer thick and it is inside the
 hole, so it comes out with a drill, a screwdriver or a push — but it does have to come out.
@@ -154,6 +167,7 @@ the defaults apply.
 | `angle` | `35` | sacrificial only: how far a rim has to hang before the hole counts, as a slope in `support_material_threshold`'s convention |
 | `anchor` | `1.0` | partial only: how far the fill may reach into held-up material for the bridge to rest on, in mm. See the table above; 0 asks the slicer for one perimeter spacing, which is OrcaSlicer's thinner answer |
 | `min_unsupported` | `0.0` | partial only: ignore unsupported pieces narrower than this, in mm. 0 asks the slicer for one perimeter spacing |
+| `max_trimmed` | `6.0` | partial only: the largest piece that may be taken off the outline, in mm |
 | `min_z` | `0.0` | leave everything below this height alone |
 
 The two modes are alternatives and cannot be combined: closing the hole leaves no wall for the

@@ -3,8 +3,10 @@
 
 -- Closes a hole for the one layer where the opening under it narrows.
 --
--- This is the `sacrificial` half of the bundle and it is off unless `settings.lua` selects it;
--- the default is `partial`, in the other file, which needs nothing drilled out afterwards.
+-- This half of the bundle answers the slice planner in both modes. Under `sacrificial` it
+-- closes the hole; under `partial` it takes off the two lobes beside the hole that no straight
+-- line can cross, so the part stops claiming material it is not going to print and the layer
+-- above knows to bridge them. The wall itself is the other file's business.
 --
 -- A counterbore is a wide recess for a screw head with a narrower hole running on through it.
 -- Printed with the recess at the bottom, the layer where the opening narrows is a ring of
@@ -36,6 +38,7 @@ local settings = (ok and type(user_settings) == "table") and user_settings or {}
 local enabled = settings.enabled ~= false
 local mode = settings.mode or "partial"
 local max_hole = settings.max_hole == nil and 10.0 or settings.max_hole
+local max_trimmed = settings.max_trimmed == nil and 6.0 or settings.max_trimmed
 local angle = settings.angle == nil and 35 or settings.angle
 local min_z = settings.min_z == nil and 0.0 or settings.min_z
 
@@ -57,16 +60,33 @@ end
 --              and islands.
 -- @return a table naming max_overhang, max_overhang_width and the remedy, or nil.
 function plan_slice(layer)
-    if not enabled or mode ~= "sacrificial" or reach_per_mm == nil then
+    if not enabled or reach_per_mm == nil then
         return nil
     end
     if layer.print_z < min_z then
         return nil
     end
 
-    return {
-        max_overhang = layer.layer_height * reach_per_mm,
-        max_overhang_width = max_hole,
-        remedy = "cap"
-    }
+    if mode == "sacrificial" then
+        return {
+            max_overhang = layer.layer_height * reach_per_mm,
+            max_overhang_width = max_hole,
+            remedy = "cap"
+        }
+    end
+
+    -- In partial mode the wall goes and the hole stays, so the ring is bridged - but a ring
+    -- cannot be bridged all the way round. The two lobes beside the hole are crossed by no
+    -- straight line that is held at both ends, so nothing is laid there, and the layer above
+    -- has to be told: it reads the outline to know whether it has anything to rest on, and left
+    -- alone it would lay solid infill over the gap believing it solid.
+    if mode == "partial" then
+        return {
+            max_overhang = layer.layer_height * reach_per_mm,
+            max_overhang_width = max_trimmed,
+            remedy = "trim"
+        }
+    end
+
+    return nil
 end

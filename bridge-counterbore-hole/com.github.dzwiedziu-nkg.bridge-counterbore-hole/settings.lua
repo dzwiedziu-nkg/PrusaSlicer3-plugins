@@ -55,6 +55,20 @@ return {
     -- gentler steps, raise it to catch only the sharp ones.
     angle = 35,
 
+    -- Only for `mode = "partial"`.
+    --
+    -- The largest piece that may be taken off the layer's outline, in mm, as the largest disc
+    -- that fits inside it.
+    --
+    -- A ring cannot be bridged all the way round: the two lobes beside the hole are crossed by
+    -- no straight line that is held at both ends, so nothing is laid there. They are taken off
+    -- the outline as well, because the layer above reads the outline to know what it has to
+    -- rest on, and left in place it lays solid infill over the gap believing it solid.
+    --
+    -- 6 mm suits a screw counterbore, where the lobes are a few millimetres across. A piece
+    -- bigger than this is left alone, because this removes material from the part.
+    max_trimmed = 6.0,
+
     -- Leave everything below this height alone, in mm. 0 acts everywhere.
     min_z = 0.0,
 
