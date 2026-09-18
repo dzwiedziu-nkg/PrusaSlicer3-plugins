@@ -29,6 +29,7 @@ is bit for bit the stock output — that is checked for every one of them.
 | [`alternate-extra-wall/`](alternate-extra-wall/) | `slicing.perimeter_planner` | Adds one wall on every other layer, so the infill is wedged between walls instead of meeting the same seam all the way up. |
 | [`reverse-on-even/`](reverse-on-even/) | `slicing.loop_direction` | Walks the wall loops of every other layer the other way round, so a wall over air is dragged in alternating directions as it cools instead of always the same way. **A reimplementation of OrcaSlicer's `overhang_reverse`.** |
 | [`purge-after-pause/`](purge-after-pause/) | `slicing.resume_planner` | Purges into the room the layer's own infill leaves, first thing after a pause or a colour change, so the wall comes through the pause without a gap and the drip lands inside the part. |
+| [`bridge-counterbore-hole/`](bridge-counterbore-hole/) | `slicing.slice_planner` | Closes a hole for the one layer where the opening under it narrows, so the step is bridged across instead of being walled in mid-air. The disc has to be drilled out. **A reimplementation of OrcaSlicer's `counterbore_hole_bridging`.** |
 | [`overhang-chamfer/`](overhang-chamfer/) | `slicing.slice_planner` | Chamfers small 90° overhangs away by letting each layer's outline reach only so far past the layer below, so the printer never lays a bead onto air where a chamfer would have done. |
 | [`make-overhang-printable/`](make-overhang-printable/) | `slicing.slice_planner` | Carries an overhang on a cone of new material built up from underneath, so it is printed on a slope instead of onto air. **A reimplementation of OrcaSlicer's `make_overhang_printable`.** |
 | [`overhang-by-size/`](overhang-by-size/) | `slicing.slice_planner` | Chamfers small overhangs off and carries big ones on a cone, choosing by size — what the two plugins above do, in one. |
@@ -37,8 +38,8 @@ is bit for bit the stock output — that is checked for every one of them.
 **Several of these share a hook, and the slicer loads one plugin of each type** — so where two
 rows name the same extension point, symlink one or the other, not both.
 
-- `overhang-chamfer`, `make-overhang-printable` and `overhang-by-size` are all
-  `slicing.slice_planner`. They are answers to the same question — take the overhang off, or put
+- `overhang-chamfer`, `make-overhang-printable`, `overhang-by-size` and
+  `bridge-counterbore-hole` are all `slicing.slice_planner`. They are answers to the same question — take the overhang off, or put
   something under it — and `overhang-by-size` is the superset: it does both, choosing by size.
 - `cross-hatch`, `gradient-infill` and `radial-bridge` are all `slicing.fill_planner`. Two
   infill patterns are alternatives the way `fill_pattern` is; `radial-bridge` only touches

@@ -1,0 +1,13 @@
+{
+	"id": "com.github.dzwiedziu-nkg.bridge-counterbore-hole",
+	"name": "Bridge counterbore holes",
+	"license": "AGPL-3.0-only",
+	"min_slicer_version": "3.0.0",
+	"version": "0.1.0",
+	"author": "dzwiedziu-nkg",
+	"description": "Closes a hole for the one layer where the opening under it narrows, so the step is bridged across instead of being walled in mid-air. The sacrificial layer has to be drilled out afterwards. A reimplementation of OrcaSlicer's counterbore_hole_bridging for PrusaSlicer.",
+	"required_apis": {"slicing.slice_planner": "1.3.0"},
+	"category": "slicing",
+	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
+	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
+}
