@@ -164,7 +164,7 @@ defaults apply.
 
 | setting | default | what it does |
 |---|---|---|
-| `density` | `1.0` | How far apart the strands go, as a fraction of their own width. `1.0` is edge to edge. Past about 1.3 they lift off their neighbours into the path of the nozzle. |
+| `density` | `0.963` | How far apart the strands go, as a fraction of their own width. `1.0` is edge to edge; the default is what OrcaSlicer's 114 % works out to, which is what came out best on a real print. Past about 1.3 they lift off their neighbours into the path of the nozzle. |
 | `flow_ratio` | `1.0` | Multiplies the extrusion, 1:1 with OrcaSlicer's `bridge_flow`. Strand width goes as its square root. |
 | `speed` | `0` | Print speed for these bridges in mm/s; `0` keeps `bridge_speed`. The only way to give external bridges a speed of their own. |
 | `external_only` | `true` | Only bridges cast over open air. A bridge over sparse infill rests on a lattice and is not sagging for want of lateral contact. |

@@ -19,7 +19,11 @@ return {
     --
     -- Past about 1.3 the strands stop being strands: too much plastic in too little space lifts
     -- them off their neighbours and into the path of the nozzle.
-    density = 1.0,
+    --
+    -- The default is what OrcaSlicer's 114 % works out to, which is the setting the owner
+    -- found best on a real print: 0.846 * 1.14 = 0.964. Their own default of 100 % is 0.846,
+    -- which leaves the strands 15 % short of touching.
+    density = 0.963,
 
     -- Multiplies the extrusion, the way OrcaSlicer's `bridge_flow` does. 1:1 with it.
     --
