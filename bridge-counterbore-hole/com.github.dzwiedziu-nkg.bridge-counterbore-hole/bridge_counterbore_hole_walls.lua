@@ -26,8 +26,8 @@ info = {
 local ok, user_settings = pcall(require, "settings")
 local settings = (ok and type(user_settings) == "table") and user_settings or {}
 
-local mode = settings.mode or "sacrificial"
-local anchor = settings.anchor or 0.0
+local mode = settings.mode or "partial"
+local anchor = settings.anchor or 1.0
 local min_unsupported = settings.min_unsupported or 0.0
 local min_z = settings.min_z == nil and 0.0 or settings.min_z
 

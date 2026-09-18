@@ -3,6 +3,9 @@
 
 -- Closes a hole for the one layer where the opening under it narrows.
 --
+-- This is the `sacrificial` half of the bundle and it is off unless `settings.lua` selects it;
+-- the default is `partial`, in the other file, which needs nothing drilled out afterwards.
+--
 -- A counterbore is a wide recess for a screw head with a narrower hole running on through it.
 -- Printed with the recess at the bottom, the layer where the opening narrows is a ring of
 -- material over open air - and the slicer draws the narrow hole's own wall in mid-air with it,
@@ -31,7 +34,7 @@ local ok, user_settings = pcall(require, "settings")
 local settings = (ok and type(user_settings) == "table") and user_settings or {}
 
 local enabled = settings.enabled ~= false
-local mode = settings.mode or "sacrificial"
+local mode = settings.mode or "partial"
 local max_hole = settings.max_hole == nil and 10.0 or settings.max_hole
 local angle = settings.angle == nil and 35 or settings.angle
 local min_z = settings.min_z == nil and 0.0 or settings.min_z

@@ -26,7 +26,9 @@ return {
     --
     -- The two modes are alternatives and cannot be combined: closing the hole leaves no wall
     -- for the other mode to remove.
-    mode = "sacrificial",
+    --
+    -- "partial" is the default because it needs nothing done to the part afterwards.
+    mode = "partial",
 
     -- The largest opening that may be closed, in mm, measured as the largest disc that fits
     -- inside it.
@@ -59,10 +61,18 @@ return {
     -- Only for `mode = "partial"`.
     --
     -- How far the fill may reach into held-up material for the bridge to be anchored on, in mm.
-    -- 0 asks the slicer for its own answer, which is one perimeter spacing. A bridge whose ends
-    -- rest on nothing is no better than the wall this removes, so widen this rather than
-    -- narrow it if the bridge comes away.
-    anchor = 0.0,
+    --
+    -- 1.0 by default, which is what it takes to anchor the bridge the way the slicer anchors an
+    -- ordinary one. Measured on the Ø12 counterbore: the bridge reaches 0.22 mm past the
+    -- unsupported ring at 0.45, and 0.65 mm at 1.0 - against the 0.63 mm a stock bridge gets.
+    -- **Above 1.0 nothing more happens**, because from there it is the slicer's own bridge
+    -- expansion that sets the overlap, not the room this leaves it; all a bigger number buys is
+    -- a wider band of wall moved out of the way for nothing.
+    --
+    -- 0 asks the slicer for one perimeter spacing, which is 0.45 on a 0.4 nozzle and is
+    -- OrcaSlicer's answer. It is thinner than an ordinary bridge's anchor, which is why it is
+    -- not the default here.
+    anchor = 1.0,
 
     -- Only for `mode = "partial"`.
     --
