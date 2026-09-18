@@ -22,7 +22,7 @@ is bit for bit the stock output — that is checked for every one of them.
 | [`sequential-islands/`](sequential-islands/) | `slicing.island_sequence` | Finishes one upper part of an object to the top before starting the other, once they have split from a common base. Experimental. |
 | [`short-extrusion/`](short-extrusion/) | `slicing.extrusion_filter` | Drops extrusions too short to be worth the travel that reaches them. |
 | [`bridge-density/`](bridge-density/) | `slicing.fill_planner` | Spaces bridge lines by the bead the nozzle actually lays rather than by the flattened width the slicer assumes, so adjacent strands touch instead of hanging alone. |
-| [`hull-line/`](hull-line/) | `slicing.fill_planner` | Lowers the flow of the solid infill that is not a top surface, where a part turns from sparse infill into solid layers. **Prusa's own experiment against the Benchy hull line**, and they were not sure it was what helped. |
+| [`hull-line/`](hull-line/) | `slicing.fill_planner` + `slicing.layer_planner` | Prints the deck before the wall that runs past it, and thins the solid infill there, where a part turns from sparse infill into solid layers. **Both halves of Prusa's own experiment against the Benchy hull line**, and they were not sure the thinning was what helped. |
 | [`cross-hatch/`](cross-hatch/) | `slicing.fill_planner` | 3D Honeycomb with the straight phase stretched over several layers, so those layers fuse into a wall before the zigzag carries the pattern round to the perpendicular direction. **A reimplementation of OrcaSlicer's Cross Hatch.** |
 | [`gradient-infill/`](gradient-infill/) | `slicing.fill_planner` | Packs the sparse infill closer near the walls and lets it open out towards the middle, so the material goes where the part is stiffest. |
 | [`radial-bridge/`](radial-bridge/) | `slicing.fill_planner` | Bridges an annular gap with spokes from the inner island to the surrounding wall, instead of parallel lines across the whole opening. |
@@ -48,6 +48,10 @@ rows name the same extension point, symlink one or the other, not both.
   `slicing.fill_planner`. Two
   infill patterns are alternatives the way `fill_pattern` is; `radial-bridge` only touches
   bridges, so it is the one you would most want alongside another, and cannot have.
+- `hull-line` is the only plugin here on `slicing.layer_planner`, so its ordering half never
+  collides with anything. Its two halves are two files in one directory, and the fill planner
+  is claimed by the file rather than by the setting that turns it off - so to keep the ordering
+  half beside another fill planner, delete `hull_line.lua` from the installed bundle.
 
 ## Installing one
 

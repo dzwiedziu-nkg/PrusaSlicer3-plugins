@@ -43,5 +43,31 @@ return {
     roles = {SolidInfill = true},
 
     -- Leave the first layers alone, counted from the bed.
-    skip_first_layers = 0
+    skip_first_layers = 0,
+
+    -- The second half of the plugin, and the half Prusa thought did the work: **print the deck
+    -- before the wall that runs past it**. Set to false to turn it off and leave only the flow.
+    --
+    -- On a transition layer the order becomes solid fill, then the rest of the fill, then the
+    -- walls, so the hull's wall is not laid straight after the mass of solid beside it. With a
+    -- modifier mesh splitting the deck from the hull - which is how Prusa did it - the deck's
+    -- own walls are a group of their own and come first, which is their order exactly.
+    order = true,
+
+    -- How much solid infill, in mm^3, makes a layer a deck rather than a patch.
+    min_solid = 1.0,
+
+    -- How many layers back the "almost none below" comparison looks.
+    --
+    -- It is also how many layers have to go by before anything can fire at all: a part that
+    -- starts solid on the bed is not a transition, because there is no wall below it to carry
+    -- the mark.
+    window = 5,
+
+    -- How many layers from the transition are reordered, counting the first.
+    depth = 3,
+
+    -- Only treat a layer as a transition when a wall runs through it. The hull line is a mark
+    -- on a wall, so a layer with none cannot have one.
+    require_wall = true
 }

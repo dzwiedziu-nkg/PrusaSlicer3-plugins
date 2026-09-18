@@ -1,13 +1,17 @@
 # Hull line — a PrusaSlicer slicing plugin
 
-A `slicing.fill_planner` plugin for PrusaSlicer 3.x. It lowers the flow of the solid infill that
-is not a top surface, and can give it its own speed, where a part turns from sparse infill into
-solid layers.
+Two plugins in one bundle, and between them both halves of Prusa's own experiment against the
+Benchy hull line:
+
+| file | hook | what it does |
+|---|---|---|
+| `hull_line.lua` | `slicing.fill_planner` | lowers the flow of the solid infill that is not a top surface, and can give it its own speed |
+| `hull_line_order.lua` | `slicing.layer_planner` | **prints the deck before the wall that runs past it**, where a part turns from sparse infill into solid layers |
 
 > **This is Prusa's own experiment, and they were not sure it was what helped.** Their write-up
-> of the Benchy hull line lists four things they tried by hand in the G-code; this is the one a
-> fill planner can do. The README says what the other three would need, and what the numbers
-> here actually look like, because the honest answer is that this is a small lever.
+> of the Benchy hull line lists four things they tried by hand in the G-code; two of them are
+> here. The README says what the other two would need, and what the numbers here actually look
+> like, because one of these levers is small and the other one costs nothing.
 
 ## The problem
 
@@ -43,12 +47,12 @@ So on a small part **the step is not in the time, it is in the throughput**: the
 per second going into the part. On a part big enough for its layers to clear the minimum time —
 a real Benchy at 150 g — the time is free to step instead, and that is the case Prusa describe.
 
-This plugin's two settings map onto the two regimes: `flow_ratio` takes material out of the
-throughput, and `speed` is for the other regime. **`speed` does nothing while the cooling
-slowdown is pinning the layer time**, because the cooling logic rescales every feedrate in the
-layer afterwards.
+The settings map onto the two regimes: `flow_ratio` takes material out of the throughput, and
+`speed` is for the other regime. **`speed` does nothing while the cooling slowdown is pinning
+the layer time**, because the cooling logic rescales every feedrate in the layer afterwards.
+The reordering half is about neither: it changes *when* in the layer the wall is laid.
 
-## What it does, and what it is worth
+## The flow half, and what it is worth
 
 Prusa's words are "slightly lower the flow of solid infill, except for the very top layer". So:
 solid infill, not top solid infill, and not the small patches that are solid for other reasons.
@@ -68,31 +72,80 @@ the microlitre. Over the whole part it is −0.32 %.
 It is worth printing precisely because Prusa could not tell whether it helped; the measurement
 above is the slicing half of that question, and the printer has the other half.
 
+## The order half, which costs nothing
+
+Prusa's second experiment was to print *deck perimeters, deck infill, then the rest of the
+layer*, so that the hull's wall is not laid straight after the mass of solid beside it. That is
+an ordering decision, and `slicing.layer_planner` is the hook for it: a layer falls into groups —
+the walls of one island, and each run of its fill — and a plugin answers with the order to print
+them in.
+
+It is a **layer** planner rather than a fill planner because it has to know *which* layer the
+deck starts on. This hook is reached from the serialized G-code stage, one layer at a time and in
+order, so the plugin can carry a running picture of the part from one layer to the next and
+notice where it changes. A fill planner is asked about every layer at once and can never know.
+
+The rule is the signature Prusa describe and this repository measured: real solid infill where
+the layers below carried almost none, with a wall running through. Measured on the test block,
+9 of 104 layer slices are reordered, in two runs:
+
+| | layers | why |
+|---|---|---|
+| the deck | Z7.00, 7.20, 7.40 | the transition the hull line is named after |
+| the top shell | Z19.60 … 20.60 | the same change of regime, at the top of the part |
+
+and on each of them the order changes like this:
+
+```
+stock    ;TYPE:Perimeter > External perimeter > Internal infill > Solid infill
+planned  ;TYPE:Internal infill > Solid infill > Perimeter > External perimeter
+```
+
+**Nothing else changes, and that is the point.** Extruded length per role, before and after:
+
+| role | stock | planned |
+|---|---|---|
+| External perimeter | 5838.281 | 5838.281 |
+| Perimeter | 5494.261 | 5494.261 |
+| Internal infill | 4401.878 | 4401.878 |
+| Solid infill | 1338.638 | 1338.638 |
+| Bridge infill | 461.550 | 461.550 |
+| Top solid infill | 378.606 | 378.606 |
+| filament, mm | 637.7800 | 637.7800 |
+| travel, mm | 2106.38 | **2100.23** |
+
+Same paths, same material, same estimated time; 6.15 mm less travel, because a group that is
+printed where the head already is saves a move. This half has no cost to weigh against whatever
+it is worth on the print — which, again, only the print can say.
+
 ## What it cannot do
 
-Three of Prusa's four experiments are out of reach of this extension point, and two of them are
-out of reach of the fork altogether:
+Two of Prusa's four experiments are still out of reach, and one of them is out of reach of the
+fork altogether:
 
 - **A modifier mesh splitting the deck from the hull** is a change to the model, not to slicing.
-- **Printing the deck before the rest of the layer** is a change to the order extrusions are
-  printed in, within one layer. No extension point here can reorder them.
-- **Two layers of wall in a row before returning to the infill** reorders across layers, which
-  is a deeper change still.
+  With one, this plugin gets closer to Prusa's order for free: the deck becomes its own region,
+  so its walls and its fill are groups of their own and come first, which is their order exactly.
+- **Two layers of wall in a row before returning to the infill** reorders *across* layers. No
+  hook here can express that; it needs the G-code stage to hold a layer's infill back until the
+  next layer's walls are down.
 
-It also cannot *find* the transition. A fill planner is asked about every surface of every layer
-at once, from the slicer's parallel infill stage, so it cannot compare a layer with the one
-below. What it can see is the surface in front of it, so the rule is about the surface: solid
-infill, not a top surface, at least `min_area` of it.
+There is also a limit inside the layer. A group is moved whole, and a run of fill is one region's
+worth: where a deck grows inside a part, its solid infill and the sparse infill round it are one
+group and travel together. The plugin *sees* both — a group says what every role in it
+contributes, which is how the deck is detected at all — but it cannot print one before the other
+until they are separate regions, and a modifier mesh is what makes them separate.
 
 ## Requirements
 
-**No official PrusaSlicer release has this extension point.** It needs the fork:
+**No official PrusaSlicer release has these extension points.** They need the fork:
 
 **<https://github.com/dzwiedziu-nkg/PrusaSlicer>**, branch `main`.
 
-It also needs `slicing.fill_planner` at API 1.5.0, which is what lets a plugin say "your lines,
-printed differently" rather than having to lay its own — and what lets it reach solid infill at
-all, since PrusaSlicer fills that with a pattern whose lines carry a width per point.
+`slicing.fill_planner` at API 1.5.0 is what lets a plugin say "your lines, printed differently"
+rather than having to lay its own — and what lets it reach solid infill at all, since
+PrusaSlicer fills that with a pattern whose lines carry a width per point. `slicing.layer_planner`
+at 1.0.0 is the ordering hook, and it is new with this plugin.
 
 ## Installing
 
@@ -101,25 +154,47 @@ ln -sfn "$PWD/hull-line/com.github.dzwiedziu-nkg.hull-line" ~/.config/PrusaSlice
 ```
 
 **It shares `slicing.fill_planner` with `bridges/` and `sparse-infill/`**, and the slicer loads
-one plugin of each type, so only one of the three can be installed at a time.
+one plugin of each type, so only one of the three can be installed at a time. Nothing else in
+this repository uses `slicing.layer_planner` yet.
+
+The two halves are two files, and it is the file rather than the setting that claims a hook:
+`flow_ratio = 1.0` turns the flow half off but still occupies the fill planner slot. To run the
+ordering half beside a different fill planner, delete `hull_line.lua` from the installed
+bundle.
 
 ## Settings
 
-`settings.lua`, next to the Lua source. Edit and slice again: no restart, no rescan. The file is
-read inside a `pcall`, so **a syntax error in it is reported nowhere** — the file is ignored and
-the defaults apply.
+`settings.lua`, next to the Lua source, shared by both halves. Edit and slice again: no restart,
+no rescan. The file is read inside a `pcall`, so **a syntax error in it is reported nowhere** —
+the file is ignored and the defaults apply.
+
+The flow half:
 
 | setting | default | what it does |
 |---|---|---|
-| `flow_ratio` | `0.95` | how much of the flow the solid infill keeps. 1.0 turns the plugin off |
+| `flow_ratio` | `0.95` | how much of the flow the solid infill keeps. 1.0 turns this half off |
 | `speed` | `0` | its print speed in mm/s. 0 keeps the role's own, and see the regime section |
 | `min_area` | `15.0` | ignore solid surfaces smaller than this, in mm² |
 | `roles` | `{SolidInfill = true}` | what to claim. `TopSolidInfill` is deliberately not here |
 | `skip_first_layers` | `0` | leave this many layers at the bottom alone |
 
+The order half:
+
+| setting | default | what it does |
+|---|---|---|
+| `order` | `true` | print the deck first on a transition layer. `false` turns this half off |
+| `min_solid` | `1.0` | how much solid infill, in mm³, makes a layer a deck rather than a patch |
+| `window` | `5` | how many layers back the "almost none below" comparison looks — and how many have to go by before anything can fire at all |
+| `depth` | `3` | how many layers from the transition are reordered, counting the first |
+| `require_wall` | `true` | only treat a layer as a transition when a wall runs through it |
+
 `min_area` is measured, not guessed: on the test block the solid infill of the three layers over
 the deck is 19.2, 27.9 and 29.1 mm², and the patches this is meant to skip are 0.7 to 5.1. The
 default sits in the gap.
+
+`window` is also the guard at the bottom of the part. A part that starts solid on the bed is not
+a transition — there is no wall below it to be marked — and with no such guard the first layers
+of every print are reordered for nothing.
 
 ## Licence
 

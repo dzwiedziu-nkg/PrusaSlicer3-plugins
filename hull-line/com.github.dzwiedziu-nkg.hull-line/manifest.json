@@ -5,8 +5,8 @@
 	"min_slicer_version": "3.0.0",
 	"version": "0.1.0",
 	"author": "dzwiedziu-nkg",
-	"description": "Lowers the flow of the solid infill that is not a top surface, and can slow it down, where a part turns from sparse infill into solid layers. Prusa's own experiment against the Benchy hull line, as a plugin.",
-	"required_apis": {"slicing.fill_planner": "1.5.0"},
+	"description": "Prints the deck before the wall that runs past it, and thins the solid infill there, where a part turns from sparse infill into solid layers. Both halves of Prusa's own experiment against the Benchy hull line.",
+	"required_apis": {"slicing.fill_planner": "1.5.0", "slicing.layer_planner": "1.0.0"},
 	"category": "slicing",
 	"web": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins",
 	"repo": "https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins"
