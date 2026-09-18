@@ -66,7 +66,8 @@ end
 
 --- Decides the order this layer's groups are printed in.
 -- @param layer table with layer_id, print_z, extruder_id and groups, each carrying island,
---              kind, role, length, volume and bbox.
+--              kind, role, length, volume, bbox and roles - the last being what every role in
+--              the group contributes, keyed by name, which is what the deck is detected from.
 -- @return a list of positions into layer.groups, or nil to keep the slicer's order.
 function plan_layer(layer)
     if not enabled then
