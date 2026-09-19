@@ -160,9 +160,12 @@ function plan_layer(layer)
     -- By the dominant role, deliberately: a group is moved whole, so what decides where it goes
     -- is what most of it is. A run that is mostly sparse with a patch of solid in it is sparse
     -- for this purpose and stays where the slicer put it.
+    -- Under `always` every fill group counts as the deck, so the wall goes last on every layer
+    -- and the run has no boundaries at all. That is the whole point of the diagnostic: moving
+    -- only the solid groups would leave a boundary wherever a layer has no solid in it.
     local deck, rest = {}, {}
     for i, group in ipairs(layer.groups) do
-        if group.kind == "fill" and DECK_ROLES[group.role] then
+        if group.kind == "fill" and (always or DECK_ROLES[group.role]) then
             deck[#deck + 1] = i
         else
             rest[#rest + 1] = i
