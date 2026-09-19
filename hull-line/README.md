@@ -134,7 +134,12 @@ the fill byte for byte, this half is not for you.
 
 On a part that turns solid and stays solid, the run therefore covers everything above the
 transition, which is what `infill_first` does for a whole object anyway. `min_solid` is the knob
-if you want it to let go sooner.
+at both ends: on the test block it decides where the deck starts and stops being one.
+
+| `min_solid` | reordered | the deck run |
+|---|---|---|
+| `1.0`, the default | 11 of 104 | Z7.00 … 7.80 — from the layer that carries 10.2 mm³ to the one that carries 0.7 |
+| `0.5` | 15 of 104 | Z6.80 … 8.00 — one layer earlier, where the first 0.7 mm³ sliver of deck appears, and one later |
 
 ## What it cannot do
 
@@ -201,7 +206,7 @@ The order half:
 | setting | default | what it does |
 |---|---|---|
 | `order` | `true` | print the deck first on a transition layer. `false` turns this half off |
-| `min_solid` | `1.0` | how much solid infill, in mm³, makes a layer a deck rather than a patch |
+| `min_solid` | `1.0` | how much solid infill, in mm³, makes a layer a deck rather than a patch — it sets both ends of the run |
 | `window` | `5` | how many layers back the "almost none below" comparison looks — and how many have to go by before anything can fire at all |
 | `depth` | `3` | the shortest run, in layers; the run itself lasts as long as the deck does |
 | `require_wall` | `true` | only treat a layer as a transition when a wall runs through it |
