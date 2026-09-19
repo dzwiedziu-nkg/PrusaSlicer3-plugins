@@ -141,6 +141,49 @@ at both ends: on the test block it decides where the deck starts and stops being
 | `1.0`, the default | 11 of 104 | Z7.00 … 7.80 — from the layer that carries 10.2 mm³ to the one that carries 0.7 |
 | `0.5` | 15 of 104 | Z6.80 … 8.00 — one layer earlier, where the first 0.7 mm³ sliver of deck appears, and one later |
 
+## What reordering does besides reorder, and the print that tells you whether it matters
+
+**The first print of this was a regression**, on a Core One with the Gen 2 hotend: the block's
+wall is perfect without the plugin and shows a faint difference with it, on exactly the layers
+that were reordered. Nothing in the G-code explains that at first look — speed, flow, direction,
+seam position, retraction count and fan are identical, checked move by move. Two things do
+change, and neither is visible as a number in the file:
+
+**1. When the wall is laid, relative to the wall below it.** Moving the wall to the end of a
+layer shifts its phase, and a run of reordered layers therefore has two steps in it — one where
+the run starts and one where it ends. Measured at the seam of the test block, the time from
+laying a piece of wall to laying the piece on top of it:
+
+| Z | 6.80 | **7.00** | 7.20 | 7.40 | 7.60 | 7.80 | **8.00** | 8.20 |
+|---|---|---|---|---|---|---|---|---|
+| stock | 7.55 s | 7.49 | 7.01 | 7.17 | 7.63 | 7.82 | 10.75 | 8.89 |
+| reordered run | 7.55 s | **10.88** | 8.13 | 8.07 | 7.88 | 7.89 | **4.97** | 8.89 |
+| `always = true` | 7.97 s | 8.00 | 8.13 | 8.07 | 7.88 | 7.89 | 8.44 | 7.37 |
+
+The wall waits half again as long entering the run and half as long leaving it. **That is the
+same kind of thermal step the hull line is blamed on**, put back at the same height by the fix.
+
+**2. The layer now ends on the outside wall.** Its last extrusion is the external perimeter
+closing at the seam, and the wipe and the layer-change travel start there instead of somewhere
+inside the part.
+
+`always = true` is in `settings.lua` for exactly this question. It reorders every layer, so the
+wall is laid last from bottom to top and the run has no boundaries — the third row above, flat
+all the way. Print the block three times, without the plugin, with the ordinary run and with
+`always`, and the wall says which of the two mechanisms marks it:
+
+- **`always` is clean and the ordinary run is not** → the marks come from *switching* order part
+  way up, not from the order. Then a run has to stop costing a step, which means keeping the
+  wall off the layer boundary (see below), or not switching at all.
+- **both are marked the same way** → it is the order itself, and the deck being printed first is
+  not worth what the wall pays for it on this part.
+
+The way out of both, if the print says to keep going, is to put the wall **in the middle** of
+the layer rather than at its end: deck infill, then the wall, then the sparse infill. The layer
+then ends inside the part and the phase step halves. It needs the slicer to offer a region's
+solid and sparse fill as separate groups, which it does not yet — see the limit at the end of
+the next section.
+
 ## What it cannot do
 
 Two of Prusa's four experiments are still out of reach, and one of them is out of reach of the
@@ -210,6 +253,7 @@ The order half:
 | `window` | `5` | how many layers back the "almost none below" comparison looks — and how many have to go by before anything can fire at all |
 | `depth` | `3` | the shortest run, in layers; the run itself lasts as long as the deck does |
 | `require_wall` | `true` | only treat a layer as a transition when a wall runs through it |
+| `always` | `false` | diagnostic: reorder every layer, so the run has no boundaries — see above |
 
 `min_area` is measured, not guessed: on the test block the solid infill of the three layers over
 the deck is 19.2, 27.9 and 29.1 mm², and the patches this is meant to skip are 0.7 to 5.1. The

@@ -74,5 +74,21 @@ return {
 
     -- Only treat a layer as a transition when a wall runs through it. The hull line is a mark
     -- on a wall, so a layer with none cannot have one.
-    require_wall = true
+    require_wall = true,
+
+    -- Diagnostic, not a feature: reorder **every** layer, so the wall is laid last from the
+    -- first layer to the last and the run has no boundaries in the middle of the part.
+    --
+    -- Why it exists. Reordering a run of layers changes nothing about speed, flow, direction or
+    -- seam - but it does change *when* in the layer the wall is laid, and so how long that wall
+    -- waits before the next one lands on it. Measured on the test block at the seam: the
+    -- ordinary run makes that wait 10.9 s on the first reordered layer and 5.0 s on the first
+    -- layer after it, where every other layer of the print sits at 7.0 to 7.8 s. Two steps in
+    -- the wall's rhythm, at the transition, which is where a hull line forms.
+    --
+    -- Print the block once with this false and once with it true. If the wall is clean all the
+    -- way up with it true, the marks come from *switching* the order part way up the part, not
+    -- from the order. If the wall looks the same either way, it is the order itself - the layer
+    -- ending on the outside wall, where the layer-change travel then starts.
+    always = false
 }

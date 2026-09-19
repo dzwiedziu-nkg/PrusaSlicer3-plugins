@@ -32,6 +32,7 @@ local min_solid = settings.min_solid == nil and 1.0 or settings.min_solid
 local window = settings.window == nil and 5 or settings.window
 local depth = settings.depth == nil and 3 or settings.depth
 local require_wall = settings.require_wall ~= false
+local always = settings.always == true
 
 -- What counts as the deck: the roles a solid layer is laid with. Ironing and gap fill are not
 -- here, and neither is TopSolidInfill - a top surface is solid because it is the outside of the
@@ -117,6 +118,13 @@ function plan_layer(layer)
         last_layer = layer.layer_id
     end
     carried = carried + solid
+
+    -- Diagnostic: reorder every layer, so the wall is laid last throughout and the run has no
+    -- boundaries in the middle of the part. Printed against the ordinary run it says whether a
+    -- mark on the wall comes from the order itself or from changing the order part way up.
+    if always then
+        running = true
+    end
 
     if not running then
         local before = baseline()
