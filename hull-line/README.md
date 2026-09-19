@@ -72,7 +72,7 @@ the microlitre. Over the whole part it is −0.32 %.
 It is worth printing precisely because Prusa could not tell whether it helped; the measurement
 above is the slicing half of that question, and the printer has the other half.
 
-## The order half, which costs nothing
+## The order half, and what it costs
 
 Prusa's second experiment was to print *deck perimeters, deck infill, then the rest of the
 layer*, so that the hull's wall is not laid straight after the mass of solid beside it. That is
@@ -86,12 +86,17 @@ order, so the plugin can carry a running picture of the part from one layer to t
 notice where it changes. A fill planner is asked about every layer at once and can never know.
 
 The rule is the signature Prusa describe and this repository measured: real solid infill where
-the layers below carried almost none, with a wall running through. Measured on the test block,
-9 of 104 layer slices are reordered, in two runs:
+the layers below carried almost none, with a wall running through. The run then **follows the
+deck** — it goes on while the layer is still carrying at least `min_solid` of solid infill, and
+ends on the first layer after that, with `depth` as a floor for a deck only a layer or two thick.
+A fixed count would hand the wall back to its old place in the middle of a deck, which is
+precisely where the reordering is wanted.
+
+Measured on the test block, 11 of 104 layer slices are reordered, in two runs:
 
 | | layers | why |
 |---|---|---|
-| the deck | Z7.00, 7.20, 7.40 | the transition the hull line is named after |
+| the deck | Z7.00 … 7.80 | the transition the hull line is named after; the solid infill there runs 10.2, 3.9, 5.6, 5.8, 0.7 mm³ |
 | the top shell | Z19.60 … 20.60 | the same change of regime, at the top of the part |
 
 and on each of them the order changes like this:
@@ -112,19 +117,24 @@ planned  ;TYPE:Internal infill > Solid infill > Perimeter > External perimeter
 | Bridge infill | 461.550 | 461.550 |
 | Top solid infill | 378.606 | 378.606 |
 | filament, mm | 637.7800 | 637.7800 |
-| travel, mm | 2106.38 | **2100.23** |
+| travel, mm | 2106.38 | 2112.19 |
 
-Same paths, same material, same estimated time; 6.15 mm less travel, because a group that is
-printed where the head already is saves a move. This half has no cost to weigh against whatever
-it is worth on the print — which, again, only the print can say.
+Same paths, same material, same estimated print time. The travel is 5.8 mm longer, 0.3 % of it
+and about a hundredth of a second, because the head leaves the deck at the far end from where the
+wall starts. On the counterbore plate below the same reordering saves 20 mm instead, so **treat
+the travel as a wash** rather than as a cost or a saving.
 
 **One honest caveat, measured on a different part.** On a plate of two counterbore test objects
-the rule fires on 19 of 75 layer slices — a bridged hole is a sparse-to-solid transition too —
-and there the fill is not quite untouched: internal infill comes out 1.9 mm longer over 7432 mm,
-which is +0.03 %, with the same number of extruded segments (11 481 both ways), the same filament
-total and the same estimated time. A run entered from somewhere else is chained and cut up
-slightly differently. Nothing is lost or added; if you need the fill byte for byte, this half is
-not for you.
+the rule fires on 38 of 75 layer slices — a bridged hole is a sparse-to-solid transition too, and
+above the bore those parts stay solid, so the run stays on — and there the fill is not quite
+untouched: internal infill comes out 2.6 mm longer over 7432 mm, which is +0.035 %, one extruded
+segment fewer out of 11 481, and the same filament total and estimated time. A run entered from
+somewhere else is chained and cut up slightly differently. Nothing is lost or added; if you need
+the fill byte for byte, this half is not for you.
+
+On a part that turns solid and stays solid, the run therefore covers everything above the
+transition, which is what `infill_first` does for a whole object anyway. `min_solid` is the knob
+if you want it to let go sooner.
 
 ## What it cannot do
 
@@ -193,7 +203,7 @@ The order half:
 | `order` | `true` | print the deck first on a transition layer. `false` turns this half off |
 | `min_solid` | `1.0` | how much solid infill, in mm³, makes a layer a deck rather than a patch |
 | `window` | `5` | how many layers back the "almost none below" comparison looks — and how many have to go by before anything can fire at all |
-| `depth` | `3` | how many layers from the transition are reordered, counting the first |
+| `depth` | `3` | the shortest run, in layers; the run itself lasts as long as the deck does |
 | `require_wall` | `true` | only treat a layer as a transition when a wall runs through it |
 
 `min_area` is measured, not guessed: on the test block the solid infill of the three layers over

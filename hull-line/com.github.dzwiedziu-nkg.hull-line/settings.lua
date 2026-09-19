@@ -64,7 +64,12 @@ return {
     -- the mark.
     window = 5,
 
-    -- How many layers from the transition are reordered, counting the first.
+    -- The shortest run, in layers, counting the transition itself.
+    --
+    -- It is a minimum rather than the whole run: the reordering keeps going while the layer is
+    -- still carrying the deck - at least `min_solid` of solid infill - and ends on the first
+    -- layer after that. A deck is as many layers thick as the part makes it, and a fixed count
+    -- would hand the wall back to its old place in the middle of one.
     depth = 3,
 
     -- Only treat a layer as a transition when a wall runs through it. The hull line is a mark

@@ -41,7 +41,9 @@ local SOLID_ROLES = {"SolidInfill", "BridgeInfill"}
 -- What the layers below carried, one entry per layer, newest last. The plugin is called in
 -- layer order, which is the whole reason this can be kept at all.
 local history = {}
--- Layers still to be reordered, this one included.
+-- Inside a transition: this layer and the ones after it are reordered until the deck ends.
+local running = false
+-- Layers of the minimum run still owed, this one included.
 local layers_left = 0
 local last_layer = -1
 -- Solid volume of the layer being described, summed over the pieces it falls into.
@@ -99,6 +101,14 @@ function plan_layer(layer)
     if layer.layer_id ~= last_layer then
         if last_layer >= 0 then
             history[#history + 1] = carried
+            -- The run follows the deck, not a counter. It ends on the first layer after the
+            -- one that stopped carrying `min_solid` of solid infill, once the minimum run is
+            -- spent - a deck is as many layers thick as the part makes it, and stopping in the
+            -- middle of one leaves the wall laid after the mass on exactly the layers the
+            -- reordering was meant for.
+            if running and layers_left <= 0 and carried < min_solid then
+                running = false
+            end
         end
         carried = 0.0
         if layers_left > 0 then
@@ -108,18 +118,19 @@ function plan_layer(layer)
     end
     carried = carried + solid
 
-    if layers_left <= 0 then
+    if not running then
         local before = baseline()
         -- The deck: real solid infill where the layers below carried almost none. A ratio
         -- rather than a difference, because "almost none" is what the layers below have and a
         -- difference would need a scale nobody can name for every part.
         if before ~= nil and solid >= min_solid and before < solid * 0.5
             and (wall > 0.0 or not require_wall) then
+            running = true
             layers_left = depth
         end
     end
 
-    if layers_left <= 0 then
+    if not running then
         return nil
     end
 
