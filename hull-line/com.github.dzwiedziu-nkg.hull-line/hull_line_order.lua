@@ -34,10 +34,14 @@ local depth = settings.depth == nil and 3 or settings.depth
 local require_wall = settings.require_wall ~= false
 local always = settings.always == true
 
--- What counts as the deck: the roles a solid layer is laid with. Ironing and gap fill are not
--- here, and neither is TopSolidInfill - a top surface is solid because it is the outside of the
--- part, which is not the change this is looking for.
+-- What counts as the deck when looking for the transition: the roles a newly solid layer is
+-- laid with. Ironing and gap fill are not here, and neither is TopSolidInfill - a top surface is
+-- solid because it is the outside of the part, which is not the change this is looking for.
 local SOLID_ROLES = {"SolidInfill", "BridgeInfill"}
+
+-- What counts as the deck when deciding what goes first. TopSolidInfill is here: by then the
+-- layer is being laid for its surface, and it is still the mass the wall should not follow.
+local DECK_ROLES = {SolidInfill = true, BridgeInfill = true, TopSolidInfill = true}
 
 -- What the layers below carried, one entry per layer, newest last. The plugin is called in
 -- layer order, which is the whole reason this can be kept at all.
@@ -142,25 +146,34 @@ function plan_layer(layer)
         return nil
     end
 
-    -- The deck first, then whatever else fills the layer, then the walls. With a modifier mesh
-    -- splitting the deck from the hull - which is how Prusa did it - the deck's own walls are a
-    -- group of their own and come first of all, which is their order exactly.
-    local solid_fill, other_fill, walls = {}, {}, {}
+    -- **The deck first, and nothing else moved.** Prusa's words are "deck perimeters, deck
+    -- infill, then the rest of the layer" - the rest, in the order the slicer chose for it.
+    -- Moving only what has to move is what keeps the wall off the end of the layer where the
+    -- part gives it somewhere else to be: split the deck off with a modifier mesh, as Prusa
+    -- did, and the layer becomes deck fill, then the hull's wall, then the hull's own fill,
+    -- which is their order exactly and ends inside the part rather than on the outside wall.
+    --
+    -- On a part with no modifier the deck shares its region with the sparse infill round it,
+    -- there is one fill group, and this can only be "fill, then wall" - see the README for what
+    -- that costs.
+    --
+    -- By the dominant role, deliberately: a group is moved whole, so what decides where it goes
+    -- is what most of it is. A run that is mostly sparse with a patch of solid in it is sparse
+    -- for this purpose and stays where the slicer put it.
+    local deck, rest = {}, {}
     for i, group in ipairs(layer.groups) do
-        if group.kind == "perimeters" then
-            walls[#walls + 1] = i
-        elseif group.role == "SolidInfill" or group.role == "BridgeInfill" then
-            -- By the dominant role here, deliberately: a group is moved whole, so what decides
-            -- where it goes is what most of it is. A run that is mostly sparse with a patch of
-            -- solid inside it is sparse for this purpose, and stays where the slicer put it.
-            solid_fill[#solid_fill + 1] = i
+        if group.kind == "fill" and DECK_ROLES[group.role] then
+            deck[#deck + 1] = i
         else
-            other_fill[#other_fill + 1] = i
+            rest[#rest + 1] = i
         end
+    end
+    if #deck == 0 then
+        return nil
     end
 
     local order = {}
-    for _, list in ipairs({solid_fill, other_fill, walls}) do
+    for _, list in ipairs({deck, rest}) do
         for _, i in ipairs(list) do
             order[#order + 1] = i
         end

@@ -52,7 +52,9 @@ return {
     -- walls, so the hull's wall is not laid straight after the mass of solid beside it. With a
     -- modifier mesh splitting the deck from the hull - which is how Prusa did it - the deck's
     -- own walls are a group of their own and come first, which is their order exactly.
-    order = true,
+    -- **Off by default**, because the first print of it was a regression: see the README, and
+    -- the three prints it asks for before this is worth switching on.
+    order = false,
 
     -- How much solid infill, in mm^3, makes a layer a deck rather than a patch.
     min_solid = 1.0,

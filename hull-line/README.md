@@ -6,7 +6,7 @@ Benchy hull line:
 | file | hook | what it does |
 |---|---|---|
 | `hull_line.lua` | `slicing.fill_planner` | lowers the flow of the solid infill that is not a top surface, and can give it its own speed |
-| `hull_line_order.lua` | `slicing.layer_planner` | **prints the deck before the wall that runs past it**, where a part turns from sparse infill into solid layers |
+| `hull_line_order.lua` | `slicing.layer_planner` | **prints the deck before the wall that runs past it**, where a part turns from sparse infill into solid layers. **Off by default** — the first print of it was a regression, and the README says what to print to find out whether it is one on your printer |
 
 > **This is Prusa's own experiment, and they were not sure it was what helped.** Their write-up
 > of the Benchy hull line lists four things they tried by hand in the G-code; two of them are
@@ -85,122 +85,113 @@ deck starts on. This hook is reached from the serialized G-code stage, one layer
 order, so the plugin can carry a running picture of the part from one layer to the next and
 notice where it changes. A fill planner is asked about every layer at once and can never know.
 
-The rule is the signature Prusa describe and this repository measured: real solid infill where
-the layers below carried almost none, with a wall running through. The run then **follows the
-deck** — it goes on while the layer is still carrying at least `min_solid` of solid infill, and
-ends on the first layer after that, with `depth` as a floor for a deck only a layer or two thick.
-A fixed count would hand the wall back to its old place in the middle of a deck, which is
-precisely where the reordering is wanted.
+The rule for *which* layers is the signature Prusa describe and this repository measured: real
+solid infill where the layers below carried almost none, with a wall running through. The run
+then **follows the deck** — it goes on while the layer is still carrying at least `min_solid` of
+solid infill, and ends on the first layer after that, with `depth` as a floor for a deck only a
+layer or two thick.
 
-Measured on the test block, 11 of 104 layer slices are reordered, in two runs:
+The rule for *what moves* is **the deck, and nothing else**: the fill groups that are mostly
+solid go to the front, and every other group keeps the order the slicer gave it. On a plain part
+that comes to "fill, then wall", because the deck shares its region with the sparse infill round
+it and there is only one fill group to move. Split them and it comes to Prusa's order exactly —
+which is the next section, and it matters more than it sounds.
 
-| | layers | why |
-|---|---|---|
-| the deck | Z7.00 … 7.80 | the transition the hull line is named after; the solid infill there runs 10.2, 3.9, 5.6, 5.8, 0.7 mm³ |
-| the top shell | Z19.60 … 20.60 | the same change of regime, at the top of the part |
+## The first print was a regression, and why
 
-and on each of them the order changes like this:
+On a Core One with the Gen 2 hotend, the test block's wall is perfect without the plugin and
+shows a faint difference with it, **on exactly the layers that were reordered**. Nothing in the
+G-code explains it at first look: speed, flow, direction, seam position, retraction count and fan
+are identical, checked move by move. Two things do change, and neither is a number in the file.
 
-```
-stock    ;TYPE:Perimeter > External perimeter > Internal infill > Solid infill
-planned  ;TYPE:Internal infill > Solid infill > Perimeter > External perimeter
-```
+**1. When the wall is laid, and so how long it waits for the wall above it.** Moving the wall to
+the end of a layer shifts its phase, so a *run* of reordered layers has a step at each end.
+Measured on the test block in the orientation it is printed in — where in the layer the outer
+wall is laid, and the time until the wall above it lands:
 
-**Nothing else changes, and that is the point.** Extruded length per role, before and after:
+| layer | 20 | **21** | 22 | 23 | 24 | 25 | **26** |
+|---|---|---|---|---|---|---|---|
+| stock, phase | 20 % | 13 % | 20 % | 20 % | 20 % | 19 % | 21 % |
+| stock, wait | 7.7 s | 7.6 | 11.2 | 7.6 | 7.5 | 7.6 | 7.9 |
+| reordered, phase | 20 % | **90 %** | 85 % | 85 % | 85 % | 86 % | 20 % |
+| reordered, wait | 7.7 s | **16.1** | 7.6 | 7.5 | 7.5 | 7.9 | **2.7** |
 
-| role | stock | planned |
-|---|---|---|
-| External perimeter | 5838.281 | 5838.281 |
-| Perimeter | 5494.261 | 5494.261 |
-| Internal infill | 4401.878 | 4401.878 |
-| Solid infill | 1338.638 | 1338.638 |
-| Bridge infill | 461.550 | 461.550 |
-| Top solid infill | 378.606 | 378.606 |
-| filament, mm | 637.7800 | 637.7800 |
-| travel, mm | 2106.38 | 2112.19 |
-
-Same paths, same material, same estimated print time. The travel is 5.8 mm longer, 0.3 % of it
-and about a hundredth of a second, because the head leaves the deck at the far end from where the
-wall starts. On the counterbore plate below the same reordering saves 20 mm instead, so **treat
-the travel as a wash** rather than as a cost or a saving.
-
-**One honest caveat, measured on a different part.** On a plate of two counterbore test objects
-the rule fires on 38 of 75 layer slices — a bridged hole is a sparse-to-solid transition too, and
-above the bore those parts stay solid, so the run stays on — and there the fill is not quite
-untouched: internal infill comes out 2.6 mm longer over 7432 mm, which is +0.035 %, one extruded
-segment fewer out of 11 481, and the same filament total and estimated time. A run entered from
-somewhere else is chained and cut up slightly differently. Nothing is lost or added; if you need
-the fill byte for byte, this half is not for you.
-
-On a part that turns solid and stays solid, the run therefore covers everything above the
-transition, which is what `infill_first` does for a whole object anyway. `min_solid` is the knob
-at both ends: on the test block it decides where the deck starts and stops being one.
-
-| `min_solid` | reordered | the deck run |
-|---|---|---|
-| `1.0`, the default | 11 of 104 | Z7.00 … 7.80 — from the layer that carries 10.2 mm³ to the one that carries 0.7 |
-| `0.5` | 15 of 104 | Z6.80 … 8.00 — one layer earlier, where the first 0.7 mm³ sliver of deck appears, and one later |
-
-## What reordering does besides reorder, and the print that tells you whether it matters
-
-**The first print of this was a regression**, on a Core One with the Gen 2 hotend: the block's
-wall is perfect without the plugin and shows a faint difference with it, on exactly the layers
-that were reordered. Nothing in the G-code explains that at first look — speed, flow, direction,
-seam position, retraction count and fan are identical, checked move by move. Two things do
-change, and neither is visible as a number in the file:
-
-**1. When the wall is laid, relative to the wall below it.** Moving the wall to the end of a
-layer shifts its phase, and a run of reordered layers therefore has two steps in it — one where
-the run starts and one where it ends. Measured at the seam of the test block, the time from
-laying a piece of wall to laying the piece on top of it:
-
-| Z | 6.80 | **7.00** | 7.20 | 7.40 | 7.60 | 7.80 | **8.00** | 8.20 |
-|---|---|---|---|---|---|---|---|---|
-| stock | 7.55 s | 7.49 | 7.01 | 7.17 | 7.63 | 7.82 | 10.75 | 8.89 |
-| reordered run | 7.55 s | **10.88** | 8.13 | 8.07 | 7.88 | 7.89 | **4.97** | 8.89 |
-| `always = true` | 7.97 s | 8.00 | 8.13 | 8.07 | 7.88 | 7.89 | 8.44 | 7.37 |
-
-The wall waits half again as long entering the run and half as long leaving it. **That is the
-same kind of thermal step the hull line is blamed on**, put back at the same height by the fix.
+The wall waits twice as long entering the run and **a third as long leaving it** — 2.7 s, which
+is a bead laid onto a bead that has barely set. **That is the same kind of thermal step the hull
+line is blamed on**, put back at the same height by the fix for it.
 
 **2. The layer now ends on the outside wall.** Its last extrusion is the external perimeter
 closing at the seam, and the wipe and the layer-change travel start there instead of somewhere
 inside the part.
 
-`always = true` is in `settings.lua` for exactly this question. It reorders every layer, so the
-wall is laid last from bottom to top and the run has no boundaries — the third row above, flat
-all the way. Print the block three times, without the plugin, with the ordinary run and with
-`always`, and the wall says which of the two mechanisms marks it:
+## The way out: split the deck off, the way Prusa did
 
-- **`always` is clean and the ordinary run is not** → the marks come from *switching* order part
-  way up, not from the order. Then a run has to stop costing a step, which means keeping the
-  wall off the layer boundary (see below), or not switching at all.
-- **both are marked the same way** → it is the order itself, and the deck being printed first is
-  not worth what the wall pays for it on this part.
+With a modifier mesh over the deck, the deck is a region of its own, so its fill is a group of
+its own — and then the plugin's rule gives **deck fill, then the hull's wall, then the hull's own
+fill**. That is Prusa's order, and it puts the wall back in the middle of the layer where the
+step largely disappears:
 
-The way out of both, if the print says to keep going, is to put the wall **in the middle** of
-the layer rather than at its end: deck infill, then the wall, then the sparse infill. The layer
-then ends inside the part and the phase step halves. It needs the slicer to offer a region's
-solid and sparse fill as separate groups, which it does not yet — see the limit at the end of
-the next section.
+| layer | 20 | **21** | 22 | 23 | 24 | 25 | **26** |
+|---|---|---|---|---|---|---|---|
+| modifier + order, phase | 20 % | 51 % | 37 % | 37 % | 37 % | 42 % | 21 % |
+| modifier + order, wait | 7.7 s | 12.2 | 8.7 | 7.8 | 7.8 | 8.8 | 6.9 |
+
+Against 16.1 s and 2.7 s without the modifier: the entry step is halved and the exit step is
+gone. The layer ends inside the part, on the hull's own infill.
+
+`tools/mkdeckmodifier.py` in the fork's workspace writes such a project, and
+`prusa_benchy_hullline_test_block4_deck.3mf` is the test block with one already in it — a box
+over the deck, inset from the wall so the hull keeps a ring of its own fill, carrying
+`perimeters = 0` so the deck gets no wall of its own. In the GUI it is: right-click the object,
+*Add modifier → Box*, scale and place it over the deck, and give it `Perimeters = 0`.
+
+**It is not free.** The region boundary gets walled, which on this block is +247 mm of external
+and +258 mm of internal perimeter: **+15.0 mm of filament, +2.3 %, and 15 s** of print time. The
+reordering on top of it is free — every role identical to the milligram, same filament, same
+estimated time, 1.9 mm less travel.
+
+## The print that decides
+
+Four slices of the same block, same filament, same session, same profile. Each answers one
+question, and they are worth printing in this order:
+
+| # | what | settings |
+|---|---|---|
+| 1 | **reference** | no plugin installed (or `flow_ratio = 1.0` and `order = false`) |
+| 2 | **the order, as it was** | `order = true` on the plain project — this is the one that came out marked |
+| 3 | **the order everywhere** | `order = true`, `always = true` on the plain project |
+| 4 | **Prusa's own** | `order = true` on `prusa_benchy_hullline_test_block4_deck.3mf` |
+
+- **3 clean, 2 marked** → the marks come from *switching* order part way up the part, not from
+  the order. Then 4 is the shape to use, and the `always` row of the table above is why.
+- **2 and 3 marked the same** → it is the order itself: the layer ending on the outside wall.
+  Then 4 is still worth printing, because it is the one that does not end there.
+- **4 clean and no hull line** → Prusa's experiment reproduces, and the price is the +2.3 %
+  the modifier costs.
+- **4 marked too** → the reordering is not the lever on this printer, and the honest place to
+  stop is `order = false` with the flow half doing what little it does.
+
+Print 1 and 4 at least. If the hull line is invisible on 1 to begin with — as it was on the
+Core One with a Gen 2 hotend — then this part cannot answer the question and the Benchy has to.
 
 ## What it cannot do
 
-Two of Prusa's four experiments are still out of reach, and one of them is out of reach of the
-fork altogether:
+One of Prusa's four experiments is out of reach of the fork altogether, and one is out of reach
+of a plugin:
 
-- **A modifier mesh splitting the deck from the hull** is a change to the model, not to slicing.
-  With one, this plugin gets closer to Prusa's order for free: the deck becomes its own region,
-  so its walls and its fill are groups of their own and come first, which is their order exactly.
 - **Two layers of wall in a row before returning to the infill** reorders *across* layers. No
   hook here can express that; it needs the G-code stage to hold a layer's infill back until the
   next layer's walls are down.
+- **The modifier mesh** is a change to the model, not to slicing, so the plugin cannot make one —
+  it can only make good use of one, which is what the section above is about.
 
-There is also a limit inside the layer. A group is moved whole, and a run of fill is one region's
-worth: where a deck grows inside a part, its solid infill and the sparse infill round it are one
-group and travel together. The plugin *sees* both — a group says what every role in it
-contributes, which is how the deck is detected at all — but it cannot print one before the other
-until they are separate regions, and a modifier mesh is what makes them separate.
+There is also a limit inside the layer, and it is the reason the modifier matters. A group is
+moved whole, and a run of fill is one region's worth: where a deck grows inside a part with no
+modifier, its solid infill and the sparse infill round it are one group and travel together. The
+plugin *sees* both — a group says what every role in it contributes, which is how the deck is
+detected at all — but it cannot print one before the other while they are one region. Until a
+`slicing.layer_planner` group can be a role rather than a region, splitting the region is the
+only way to put the wall anywhere but first or last.
 
 ## Requirements
 
@@ -248,7 +239,7 @@ The order half:
 
 | setting | default | what it does |
 |---|---|---|
-| `order` | `true` | print the deck first on a transition layer. `false` turns this half off |
+| `order` | `false` | print the deck first on a transition layer. **Off by default**, see the print plan above |
 | `min_solid` | `1.0` | how much solid infill, in mm³, makes a layer a deck rather than a patch — it sets both ends of the run |
 | `window` | `5` | how many layers back the "almost none below" comparison looks — and how many have to go by before anything can fire at all |
 | `depth` | `3` | the shortest run, in layers; the run itself lasts as long as the deck does |
