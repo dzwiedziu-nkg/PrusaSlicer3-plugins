@@ -2,7 +2,7 @@
 	"id": "com.github.dzwiedziu-nkg.gradient-infill",
 	"name": "Gradient infill",
 	"license": "AGPL-3.0-only",
-	"min_slicer_version": "3.0.0",
+	"min_slicer_version": "3.0.0-alpha11",
 	"version": "0.1.0",
 	"author": "dzwiedziu-nkg",
 	"description": "Packs the sparse infill lines closer together near the walls and lets them open out towards the middle, so the material goes where the part is stiffest instead of being spread evenly through a volume that mostly does nothing.",

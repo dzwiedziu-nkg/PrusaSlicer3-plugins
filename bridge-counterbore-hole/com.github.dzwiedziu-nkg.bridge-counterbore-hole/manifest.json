@@ -2,7 +2,7 @@
 	"id": "com.github.dzwiedziu-nkg.bridge-counterbore-hole",
 	"name": "Bridge counterbore holes",
 	"license": "AGPL-3.0-only",
-	"min_slicer_version": "3.0.0",
+	"min_slicer_version": "3.0.0-alpha11",
 	"version": "0.1.0",
 	"author": "dzwiedziu-nkg",
 	"description": "Stops a counterbore being walled in mid-air, either by closing the hole for one layer or by leaving the unsupported ring to the fill stage. A reimplementation of OrcaSlicer's counterbore_hole_bridging for PrusaSlicer, in both of its modes.",

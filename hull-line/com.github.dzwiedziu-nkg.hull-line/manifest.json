@@ -2,7 +2,7 @@
 	"id": "com.github.dzwiedziu-nkg.hull-line",
 	"name": "Hull line",
 	"license": "AGPL-3.0-only",
-	"min_slicer_version": "3.0.0",
+	"min_slicer_version": "3.0.0-alpha11",
 	"version": "0.1.0",
 	"author": "dzwiedziu-nkg",
 	"description": "Prints the deck before the wall that runs past it, and thins the solid infill there, where a part turns from sparse infill into solid layers. Both halves of Prusa's own experiment against the Benchy hull line.",

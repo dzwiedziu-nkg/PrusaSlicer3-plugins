@@ -2,7 +2,7 @@
 	"id": "com.github.dzwiedziu-nkg.support-ironing",
 	"name": "Support interface ironing",
 	"license": "AGPL-3.0-only",
-	"min_slicer_version": "3.0.0",
+	"min_slicer_version": "3.0.0-alpha11",
 	"version": "0.1.0",
 	"author": "dzwiedziu-nkg",
 	"description": "Irons the top of a support interface flat before the object is printed against it, so the underside of the overhang is cast from a smooth surface instead of from a row of ridges.",

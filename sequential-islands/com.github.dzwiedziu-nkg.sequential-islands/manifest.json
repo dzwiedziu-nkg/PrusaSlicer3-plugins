@@ -2,7 +2,7 @@
 	"id": "com.github.dzwiedziu-nkg.sequential-islands",
 	"name": "Sequential islands",
 	"license": "AGPL-3.0-only",
-	"min_slicer_version": "3.0.0",
+	"min_slicer_version": "3.0.0-alpha11",
 	"version": "0.2.0",
 	"author": "dzwiedziu-nkg",
 	"description": "Prints independent upper branches one at a time after an object splits",
