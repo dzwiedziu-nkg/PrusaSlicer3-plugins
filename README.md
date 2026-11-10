@@ -3,10 +3,11 @@
 Lua plugins that change how PrusaSlicer 3 slices: what order the head visits things in, what
 it lays down, and what it does over a surface it has already covered.
 
-**They do not work on stock PrusaSlicer.** Stock 3.x runs Lua plugins, but only the
-user-invoked kind — the ones under the _Plugins_ menu, which act on the model before slicing.
-Every plugin here hangs off a *slicing* extension point that the stock slicer does not have,
-so it needs the fork:
+**They do not work on stock PrusaSlicer.** Stock 3.x runs Lua plugins, but only two kinds
+that act before slicing starts: the user-invoked ones under the _Plugins_ menu, which act on
+the model, and since `3.0.0-alpha13` the *Print Goals* (`print.print_mode`), which return a
+table of print setting overrides. Every plugin here hangs off a *slicing* extension point
+that the stock slicer does not have, so it needs the fork:
 
 **<https://github.com/dzwiedziu-nkg/PrusaSlicer>**, branch `main`.
 
@@ -53,7 +54,28 @@ rows name the same extension point, symlink one or the other, not both.
   is claimed by the file rather than by the setting that turns it off - so to keep the ordering
   half beside another fill planner, delete `hull_line.lua` from the installed bundle.
 
-## Installing one
+## Switching them on and off
+
+The slicer has no screen for slicing plugins, so this repository brings one:
+
+```bash
+git clone https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins
+./PrusaSlicer3-plugins/plugin-launcher.py
+```
+
+It lists every plugin here with a checkbox, links the ticked ones into the slicer's data
+directory, unlinks the others and starts the fork. Ticking two plugins that ask for the same
+extension point gets a warning, since the slicer would load only one of them. *Apply* does
+the linking without starting anything, which is enough when the slicer is already running.
+
+It finds the fork's binary by itself when the fork is checked out and built next to this
+repository (`../PrusaSlicer`), or when `prusaslicer-fork` is on the `PATH`; otherwise point
+the field at `build/src/slic3r-app-launcher/slic3r-app-launcher` once and it is remembered.
+It needs Python 3 with Tk (`sudo apt install python3-tk`), is written for Linux, and only
+ever creates and removes symlinks: a plugin that sits in the data directory as a real
+directory is shown and left alone.
+
+## Installing one by hand
 
 A slicing plugin is a directory containing `manifest.json` and the Lua that implements the
 extension point. It is installed by putting that directory — **named exactly as the `id` in
@@ -65,7 +87,10 @@ ln -sfn "$PWD/support-ironing/com.github.dzwiedziu-nkg.support-ironing" \
 ```
 
 The data directory is `~/.config/PrusaSlicer3-dev` on Linux (the `-dev` suffix comes from the
-alpha version the fork tracks). Removing the symlink disables the plugin. The directories are
+alpha version the fork tracks). Removing the symlink disables the plugin. Since
+`3.0.0-alpha13` the slicer skips - silently, at INFO log level - any bundle whose
+`min_slicer_version` is above its own, and in semver a plain `3.0.0` is *above* every
+`3.0.0-alphaN`; the manifests here say `3.0.0-alpha11` for that reason. The directories are
 re-scanned for **every slice**, so editing a `.lua` file takes effect on the next slice — no
 restart and no rescan.
 
