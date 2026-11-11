@@ -107,7 +107,16 @@ jobs:
           .github/package.sh assemble
       - name: Smoke test
         timeout-minutes: 20  # a frozen program that fails says so in a dialog nobody is there to close
-        run: .github/package.sh smoke
+        run: |
+          if [ "$RUNNER_OS" != Linux ]; then exec .github/package.sh smoke; fi
+          # This machine has every library there is; a user's has what README.txt tells them to install.
+          docker run --rm -v "$PWD:/repo:ro" -v "$FORK:/fork:ro" -v "$OUT:/out:ro" ubuntu:24.04 bash -ec '
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq
+            apt-get install -y -qq xz-utils xvfb >/dev/null
+            mkdir /o && tar -xJf /out/*.tar.xz -C /o
+            apt-get install -y -qq $(sed -n "s/^ *sudo apt install //p" /o/*/README.txt) >/dev/null
+            FORK=/fork OUT=/o /repo/.github/package.sh smoke' 2>&1 | tee "$OUT/logs/smoke.log"
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.system }}

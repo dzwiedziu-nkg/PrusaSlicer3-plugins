@@ -122,9 +122,9 @@ README
     case $SYSTEM in
     linux) cat >>"$PACKAGE/README.txt" <<'NOTE' ;;
 Linux: built on Ubuntu 24.04 for x86_64. It needs glibc 2.39 or newer and the system's GTK 3,
-WebKitGTK 4.1 and hidapi:
+WebKitGTK 4.1, hidapi and OpenGL:
 
-  sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 libhidapi-hidraw0
+  sudo apt install libgtk-3-0t64 libwebkit2gtk-4.1-0 libhidapi-hidraw0 libopengl0
 NOTE
     windows) cat >>"$PACKAGE/README.txt" <<'NOTE' ;;
 Windows: 64-bit, Windows 10 or newer. The programs are not signed, so Windows may say the
