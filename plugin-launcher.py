@@ -6,8 +6,12 @@ A slicing plugin is installed by a symlink to its bundle in the slicer's data di
 screen: every bundle in this repository gets a checkbox, the ticked ones are linked, the
 others unlinked, and the slicer is started.
 
-It only ever creates and removes symlinks. A bundle that sits in the data directory as a
-real directory was put there by something else; it is shown and left alone.
+It only ever creates and removes links: symlinks, and on Windows junctions. A bundle that
+sits in the data directory as a real directory was put there by something else; it is shown
+and left alone.
+
+It runs from a checkout of this repository, and frozen into a program inside the downloadable
+package (.github/package.sh), where the plugins are in plugins/ and the slicer is beside it.
 """
 
 import argparse
@@ -19,9 +23,17 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent
-CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
-# shortcut: the Linux data directory only, add the others when the fork is run elsewhere
+PROGRAM = Path(sys.executable if getattr(sys, "frozen", False) else __file__).resolve()
+# A frozen macOS build sits inside its .app; what it looks for is beside the bundle.
+REPO = next((parent.parent for parent in PROGRAM.parents if parent.suffix == ".app"), PROGRAM.parent)
+BUNDLES = REPO / "plugins" if (REPO / "plugins").is_dir() else REPO
+if sys.platform == "win32":
+    CONFIG_HOME = Path(os.environ["APPDATA"])
+elif sys.platform == "darwin":
+    CONFIG_HOME = Path.home() / "Library" / "Application Support"
+else:
+    CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+# shortcut: the "-dev" data directory of an alpha or a beta, drop the suffix for a final release
 DEFAULT_LUA_DIR = CONFIG_HOME / "PrusaSlicer3-dev" / "lua"
 SAVED_SLICER = CONFIG_HOME / "prusaslicer3-plugin-launcher.path"
 TITLE = "PrusaSlicer fork: slicing plugins"
@@ -47,10 +59,23 @@ def find_bundles(repo):
     return sorted(bundles, key=lambda bundle: bundle["name"].lower())
 
 
+def is_link(path):
+    """A symlink, or a junction (Python 3.12 is the first to tell one from a directory)."""
+    return path.is_symlink() or getattr(os.path, "isjunction", lambda _: False)(path)
+
+
+def make_link(link, target):
+    if os.name == "nt":
+        import _winapi
+        _winapi.CreateJunction(str(target), str(link))  # a symlink needs administrator rights there
+    else:
+        link.symlink_to(target, target_is_directory=True)
+
+
 def link_state(lua_dir, bundle):
-    """'on' for a symlink, 'off' for nothing, 'foreign' for a real directory."""
+    """'on' for a link, 'off' for nothing, 'foreign' for a real directory."""
     link = lua_dir / bundle["id"]
-    if link.is_symlink():
+    if is_link(link):
         return "on"
     return "foreign" if link.exists() else "off"
 
@@ -60,14 +85,14 @@ def apply(lua_dir, bundles, wanted):
     lua_dir.mkdir(parents=True, exist_ok=True)
     for bundle in bundles:
         link = lua_dir / bundle["id"]
-        if link.is_symlink():
+        if is_link(link):
             if bundle["id"] in wanted and link.resolve() == bundle["path"]:
                 continue
             link.unlink()
         elif link.exists():
             continue
         if bundle["id"] in wanted:
-            link.symlink_to(bundle["path"], target_is_directory=True)
+            make_link(link, bundle["path"])
 
 
 def shared_hooks(bundles, wanted):
@@ -85,8 +110,11 @@ def is_program(path):
 
 
 def find_slicer():
-    """The binary used last time, else `prusaslicer-fork` on PATH, else a checkout next to this one."""
+    """The package's own binary, else the one used last time, `prusaslicer-fork` on PATH, a checkout next to this one."""
     candidates = [
+        str(REPO / "PrusaSlicer/bin/slic3r-app-launcher"),
+        str(REPO / "PrusaSlicer/slic3r-app-launcher.exe"),
+        str(REPO / "PrusaSlicer.app/Contents/MacOS/PrusaSlicer"),
         SAVED_SLICER.read_text(encoding="utf-8").strip() if SAVED_SLICER.is_file() else "",
         shutil.which("prusaslicer-fork"),
         str(REPO.parent / "PrusaSlicer/build/src/slic3r-app-launcher/slic3r-app-launcher"),
@@ -98,7 +126,7 @@ def build_window(lua_dir, slicer):
     import tkinter as tk
     from tkinter import filedialog, messagebox, ttk
 
-    bundles = find_bundles(REPO)
+    bundles = find_bundles(BUNDLES)
     root = tk.Tk()
     root.title(TITLE)
     if root.tk.call("tk", "windowingsystem") == "x11":
@@ -210,14 +238,20 @@ def self_test():
         assert [link_state(lua_dir, b) for b in bundles] == ["on", "off", "foreign"]
         assert (lua_dir / "x.a" / "manifest.json").is_file()
 
-        (lua_dir / "x.b").symlink_to(scratch)  # a link to some other checkout is repointed
+        make_link(lua_dir / "x.b", Path(scratch))  # a link to some other checkout is repointed
         apply(lua_dir, bundles, {"x.b"})
         assert [link_state(lua_dir, b) for b in bundles] == ["off", "on", "foreign"]
         assert (lua_dir / "x.b").resolve() == bundles[1]["path"]
-        assert (lua_dir / "x.c").is_dir() and not (lua_dir / "x.c").is_symlink()
+        assert (lua_dir / "x.c").is_dir() and not is_link(lua_dir / "x.c")
+        apply(lua_dir, bundles, set())
+        assert not (lua_dir / "x.b").exists() and bundles[1]["path"].is_dir()  # the link went, not the bundle
 
         assert shared_hooks(bundles, {"x.a", "x.b", "x.c"}) == {"slicing.fill_planner": ["a-fill", "b-fill"]}
         assert shared_hooks(bundles, {"x.a", "x.c"}) == {}
+
+        window = build_window(lua_dir, "")  # the widgets too: a frozen build is what loses Tk
+        window.update()
+        window.destroy()
     print("self-test passed")
 
 
@@ -225,8 +259,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--lua-dir", type=Path, default=DEFAULT_LUA_DIR,
                         help="the lua/ of the slicer's data directory (default: %(default)s)")
-    parser.add_argument("--self-test", action="store_true", help="check the linking logic and exit")
+    parser.add_argument("--link", nargs="*", metavar="ID",
+                        help="no window: link exactly these plugins, unlink the others and exit")
+    parser.add_argument("--self-test", action="store_true", help="check the linking and the window, then exit")
     arguments = parser.parse_args()
     if arguments.self_test:
         sys.exit(self_test())
+    if arguments.link is not None:
+        known = find_bundles(BUNDLES)
+        if unknown := set(arguments.link) - {bundle["id"] for bundle in known}:
+            parser.error(f"no such plugin: {', '.join(sorted(unknown))}")
+        sys.exit(apply(arguments.lua_dir, known, set(arguments.link)))
     build_window(arguments.lua_dir, find_slicer()).mainloop()
