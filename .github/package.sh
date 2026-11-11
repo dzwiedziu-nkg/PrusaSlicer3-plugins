@@ -59,7 +59,7 @@ stage() {
         built=$(dirname "$(find "$BUILD/src" -name slic3r-app-launcher.exe -path '*/Release/*' | head -1)")
         cp "$built"/*.exe "$built"/*.dll "$STAGE/PrusaSlicer/"  # the build puts the STEP reader and its other DLLs there
         # The C++ runtime too: not every machine has Visual Studio's redistributable installed.
-        vs=$("/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath)
+        vs=$("/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath | tr -d '\r')
         cp "$(ls -d "$(cygpath -u "$vs")"/VC/Redist/MSVC/*/x64/Microsoft.VC*.CRT | sort | tail -1)"/*.dll "$STAGE/PrusaSlicer/"
         cp -R "$FORK/resources" "$STAGE/PrusaSlicer/resources" ;;
     macos)

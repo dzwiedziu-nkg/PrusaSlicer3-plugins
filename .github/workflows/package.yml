@@ -110,7 +110,8 @@ jobs:
         run: |
           if [ "$RUNNER_OS" != Linux ]; then exec .github/package.sh smoke; fi
           # This machine has every library there is; a user's has what README.txt tells them to install.
-          docker run --rm -v "$PWD:/repo:ro" -v "$FORK:/fork:ro" -v "$OUT:/out:ro" ubuntu:24.04 bash -ec '
+          # --init: as a container's first process xvfb-run never hears that Xvfb is ready, and waits for ever.
+          docker run --rm --init -v "$PWD:/repo:ro" -v "$FORK:/fork:ro" -v "$OUT:/out:ro" ubuntu:24.04 bash -ec '
             export DEBIAN_FRONTEND=noninteractive
             apt-get update -qq
             apt-get install -y -qq xz-utils xvfb >/dev/null
