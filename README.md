@@ -15,6 +15,14 @@ The fork adds the extension points and nothing else. Each is a place where the s
 and asks a question it would otherwise answer itself, and with no plugin installed the G-code
 is bit for bit the stock output — that is checked for every one of them.
 
+**Without compiling:** the [releases](https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins/releases)
+carry one archive per system (Linux x86_64, Windows 64-bit, macOS on Apple Silicon) holding the
+fork already built, the plugins of this repository and the launcher described
+[below](#switching-them-on-and-off). Unpack it, read its `README.txt`, start `plugin-launcher`.
+They are unofficial builds, not Prusa Research releases, and are made by
+[`.github/package.sh`](.github/package.sh) on GitHub's machines whenever the `release` branch
+is pushed (`git push origin main:release`).
+
 ## The plugins
 
 | directory | extension point | what it does |
@@ -56,7 +64,8 @@ rows name the same extension point, symlink one or the other, not both.
 
 ## Switching them on and off
 
-The slicer has no screen for slicing plugins, so this repository brings one:
+The slicer has no screen for slicing plugins, so this repository brings one. In a downloaded
+package it is the program `plugin-launcher`; from a checkout:
 
 ```bash
 git clone https://github.com/dzwiedziu-nkg/PrusaSlicer3-plugins
@@ -68,12 +77,15 @@ directory, unlinks the others and starts the fork. Ticking two plugins that ask 
 extension point gets a warning, since the slicer would load only one of them. *Apply* does
 the linking without starting anything, which is enough when the slicer is already running.
 
-It finds the fork's binary by itself when the fork is checked out and built next to this
-repository (`../PrusaSlicer`), or when `prusaslicer-fork` is on the `PATH`; otherwise point
-the field at `build/src/slic3r-app-launcher/slic3r-app-launcher` once and it is remembered.
-It needs Python 3 with Tk (`sudo apt install python3-tk`), is written for Linux, and only
-ever creates and removes symlinks: a plugin that sits in the data directory as a real
-directory is shown and left alone.
+It finds the fork's binary by itself in a package, when the fork is checked out and built
+next to this repository (`../PrusaSlicer`), or when `prusaslicer-fork` is on the `PATH`;
+otherwise point the field at `build/src/slic3r-app-launcher/slic3r-app-launcher` once and it
+is remembered.
+From a checkout it needs Python 3 with Tk (`sudo apt install python3-tk`); the packages carry
+their own. It only ever creates and removes links (symlinks, and junctions on Windows, where
+a symlink needs administrator rights): a plugin that sits in the data directory as a real
+directory is shown and left alone. `plugin-launcher.py --link ID...` links exactly the named
+plugins and unlinks the others without opening a window.
 
 ## Installing one by hand
 
@@ -86,8 +98,9 @@ ln -sfn "$PWD/support-ironing/com.github.dzwiedziu-nkg.support-ironing" \
         ~/.config/PrusaSlicer3-dev/lua/
 ```
 
-The data directory is `~/.config/PrusaSlicer3-dev` on Linux (the `-dev` suffix comes from the
-alpha version the fork tracks). Removing the symlink disables the plugin. Since
+The data directory is `~/.config/PrusaSlicer3-dev` on Linux, `%APPDATA%\PrusaSlicer3-dev` on
+Windows and `~/Library/Application Support/PrusaSlicer3-dev` on macOS (the `-dev` suffix comes
+from the alpha version the fork tracks). Removing the symlink disables the plugin. Since
 `3.0.0-alpha13` the slicer skips - silently, at INFO log level - any bundle whose
 `min_slicer_version` is above its own, and in semver a plain `3.0.0` is *above* every
 `3.0.0-alphaN`; the manifests here say `3.0.0-alpha11` for that reason. The directories are
