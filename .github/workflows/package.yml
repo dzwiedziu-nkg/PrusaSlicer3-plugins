@@ -127,21 +127,6 @@ jobs:
           compression-level: 0
           if-no-files-found: error
 
-      # shortcut: the logs go to a branch because the session that wrote this could not read Actions
-      # logs; delete this step once the three systems build.
-      - name: Logs
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          cd "$OUT/logs" 2>/dev/null || exit 0
-          gzip -9 *.log
-          git init -q .
-          git add .
-          git -c user.name=package -c user.email=package@invalid commit -qm "Logs of run $GITHUB_RUN_ID"
-          git push -qf "https://x-access-token:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY" \
-            "HEAD:refs/heads/ci-logs-${{ matrix.system }}"
-
   release:
     needs: build
     runs-on: ubuntu-24.04
