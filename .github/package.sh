@@ -36,6 +36,14 @@ deps() {
 slicer() {
     # Whose build this is: the id ends up in the G-code and in the About box.
     perl -pi -e "s/\+UNKNOWN/+plugin-fork.$(git -C "$FORK" rev-parse --short HEAD)/" "$FORK/version.inc"
+    if [ $SYSTEM = windows ]; then
+        # The fork's cmake/modules/WinSDK.cmake finds the WinRT headers of mesh repair through these
+        # two, which only a Visual Studio developer prompt sets, and this is Git Bash.
+        export WindowsSdkDir="C:/Program Files (x86)/Windows Kits/10"
+        WindowsSDKVersion=$(cd "$WindowsSdkDir/Include" &&
+            ls -d 10.*/winrt/windows.graphics.printing3d.h | sort -V | tail -1 | cut -d/ -f1)
+        export WindowsSDKVersion
+    fi
     cmake -S "$FORK" -B "$BUILD" -DCMAKE_PREFIX_PATH="$FORK/deps/build/destdir/usr/local" -DSLIC3R_BUILD_TESTS=OFF
     if [ $SYSTEM = windows ]; then
         cmake --build "$BUILD" --config Release  # /MP already compiles in parallel
