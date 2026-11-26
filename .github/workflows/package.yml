@@ -62,6 +62,14 @@ jobs:
         if: runner.os != 'Linux'  # Linux freezes its own Python, the one whose Tk the package was tried with
         with:
           python-version: "3.13"
+      - name: CMake before 4.5
+        if: runner.os == 'macOS'
+        # Boost 1.86, which the fork's deps build, hands source_group(TREE .../include/boost/locale) the
+        # file include/boost/locale.hpp; CMake 4.5 refuses it and the image moved to 4.5 in November.
+        # shortcut: macOS only, the one image on 4.5 so far; drop it once the fork's deps are past Boost 1.86.
+        run: |
+          python -m pip install "cmake<4.5"
+          cmake --version
       # The launcher first: it takes a minute, and the build after it takes hours.
       - name: Launcher
         run: .github/package.sh launcher
